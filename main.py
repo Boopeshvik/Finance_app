@@ -16,6 +16,7 @@ from routers.score import router as score_router
 from routers.dashboard import router as dashboard_router
 from routers.budgets import router as budgets_router
 from routers.categories import router as categories_router
+from routers.ai import router as ai_router
 
 from models.user import User
 from models.transaction import Transaction
@@ -52,6 +53,7 @@ app.include_router(score_router)
 app.include_router(dashboard_router)
 app.include_router(budgets_router)
 app.include_router(categories_router)
+app.include_router(ai_router)
 
 
 @app.get("/")
