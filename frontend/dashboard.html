@@ -1,0 +1,3495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Personal Finance Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg:          #080d14;
+      --sidebar-bg:  #0c1420;
+      --header-bg:   rgba(10, 16, 26, 0.92);
+      --panel:       #0f1b2d;
+      --panel-2:     #111f33;
+      --text:        #e2eaf5;
+      --muted:       #5a7a99;
+      --accent:      #3b9eff;
+      --accent-glow: rgba(59,158,255,0.18);
+      --good:        #22c55e;
+      --warn:        #f59e0b;
+      --bad:         #ef4444;
+      --border:      rgba(255,255,255,0.07);
+      --sidebar-w:   240px;
+      --header-h:    64px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+    }
+
+    /* ══ SIDEBAR ══════════════════════════════════════ */
+    .sidebar {
+      width: var(--sidebar-w);
+      min-width: var(--sidebar-w);
+      height: 100vh;
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      left: 0; top: 0;
+      z-index: 100;
+      transition: transform 0.28s cubic-bezier(.4,0,.2,1);
+    }
+
+    .sidebar-logo {
+      padding: 22px 20px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .sidebar-logo-icon {
+      width: 34px; height: 34px;
+      background: linear-gradient(135deg, #3b9eff, #0ea5e9);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px;
+      box-shadow: 0 0 18px rgba(59,158,255,0.3);
+      flex-shrink: 0;
+    }
+
+    .sidebar-logo-text {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.2;
+    }
+
+    .sidebar-logo-sub {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 400;
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      padding: 14px 10px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .nav-group-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 10px 10px 4px;
+      margin-top: 6px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 13.5px;
+      font-weight: 500;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+      transition: background 0.15s, color 0.15s;
+      position: relative;
+    }
+
+    .nav-item:hover {
+      background: rgba(59,158,255,0.07);
+      color: var(--text);
+    }
+
+    .nav-item.active {
+      background: rgba(59,158,255,0.13);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .nav-item.active::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 6px; bottom: 6px;
+      width: 3px;
+      background: var(--accent);
+      border-radius: 0 3px 3px 0;
+    }
+
+    .nav-icon {
+      font-size: 16px;
+      width: 20px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .sidebar-footer {
+      padding: 16px 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ══ APP SHELL ════════════════════════════════════ */
+    .app-shell {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      min-width: 0;
+    }
+
+    /* ══ HEADER ═══════════════════════════════════════ */
+    .app-header {
+      height: var(--header-h);
+      min-height: var(--header-h);
+      background: var(--header-bg);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .header-left {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.2;
+    }
+
+    .header-sub {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .api-input {
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 12px;
+      font-size: 12.5px;
+      font-family: 'DM Mono', monospace;
+      width: 280px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .api-input:focus { border-color: var(--accent); }
+
+    .header-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 7px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: opacity 0.15s, box-shadow 0.15s;
+      white-space: nowrap;
+    }
+
+    .header-btn:hover { opacity: 0.88; box-shadow: 0 0 14px rgba(59,158,255,0.3); }
+
+    /* ══ MAIN CONTENT ══════════════════════════════════ */
+    .main-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 28px;
+      background: var(--bg);
+    }
+
+    /* ══ MOBILE HAMBURGER ══════════════════════════════ */
+    .hamburger {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 22px;
+      cursor: pointer;
+      padding: 4px 8px;
+    }
+
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 99;
+    }
+
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .sidebar-overlay.open { display: block; }
+      .app-shell { margin-left: 0; }
+      .hamburger { display: block; }
+      .api-input { width: 180px; }
+    }
+
+    /* ══ CONTENT STYLES (unchanged from before) ════════ */
+    input[type="text"],
+    input[type="date"] {
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-size: 13.5px;
+      font-family: 'DM Sans', sans-serif;
+      min-width: 0;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input[type="text"]:focus,
+    input[type="date"]:focus {
+      border-color: var(--accent);
+    }
+
+    button {
+      border: 0;
+      background: var(--accent);
+      color: #fff;
+      padding: 9px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 13px;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    button:hover { opacity: 0.85; }
+
+    .secondary-btn {
+      background: rgba(255,255,255,0.08);
+      color: var(--text);
+    }
+
+    .danger-btn {
+      background: rgba(239,68,68,0.15);
+      color: #fca5a5;
+    }
+
+    .danger-btn:hover { background: rgba(239,68,68,0.25); opacity: 1; }
+
+    .grid-cards {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .card, .panel {
+      background: rgba(17, 24, 39, 0.92);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+
+    .card h3, .panel h3 {
+      margin: 0 0 14px;
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .value {
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      letter-spacing: -0.02em;
+    }
+
+    .sub {
+      color: var(--muted);
+      font-size: 12.5px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      gap: 12px;
+    }
+
+    .stat-row:last-child { border-bottom: 0; }
+
+    .pill {
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 600;
+      display: inline-block;
+      text-transform: capitalize;
+    }
+
+    .strong { background: rgba(34,197,94,0.12);  color: var(--good); }
+    .good   { background: rgba(59,158,255,0.12);  color: var(--accent); }
+    .fair   { background: rgba(245,158,11,0.12);  color: var(--warn); }
+    .poor   { background: rgba(239,68,68,0.12);   color: var(--bad); }
+
+    .budget-item, .goal-item {
+      margin-bottom: 14px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .budget-item:last-child, .goal-item:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: 0;
+    }
+
+    .row-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .progress {
+      width: 100%;
+      height: 8px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress > span {
+      display: block;
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #38bdf8, #22c55e);
+    }
+
+    .error {
+      margin-top: 10px;
+      color: #fecaca;
+      background: rgba(127, 29, 29, 0.45);
+      border: 1px solid rgba(248, 113, 113, 0.35);
+      padding: 12px;
+      border-radius: 12px;
+      display: none;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #020617;
+      border: 1px solid var(--border);
+      color: #cbd5e1;
+      padding: 14px;
+      border-radius: 12px;
+      max-height: 320px;
+      overflow: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th {
+      text-align: left;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      padding: 10px;
+    }
+
+    td {
+      padding: 10px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+      font-size: 13.5px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .stack-gap {
+      margin-top: 16px;
+    }
+
+    @media (max-width: 1100px) {
+      .grid-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .layout, .two-col { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 640px) {
+      .grid-cards { grid-template-columns: 1fr; }
+    }
+
+    /* ── Charts ── */
+    .chart-controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      margin-bottom: 18px;
+    }
+
+    .chart-controls label {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .chart-controls input[type="date"],
+    .chart-controls input[type="text"],
+    .chart-controls select {
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 13px;
+      min-width: 140px;
+      width: auto;
+    }
+
+    .chart-controls button {
+      padding: 8px 16px;
+      font-size: 13px;
+      align-self: flex-end;
+    }
+
+    .chart-wrap {
+      position: relative;
+      width: 100%;
+      height: 340px;
+    }
+
+    .chart-empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--muted);
+      font-size: 14px;
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+    }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    @media (max-width: 900px) {
+      .charts-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── Searchable Category Dropdown ── */
+    .cat-dropdown-wrap {
+      position: relative;
+      width: 100%;
+    }
+
+    .cat-search-input {
+      width: 100%;
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 36px 9px 12px;
+      font-size: 13.5px;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      min-width: unset;
+    }
+
+    .cat-search-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .cat-dropdown-arrow {
+      position: absolute;
+      right: 11px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      pointer-events: none;
+      font-size: 12px;
+    }
+
+    .cat-dropdown-list {
+      display: none;
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      background: #0f1b2d;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      max-height: 220px;
+      overflow-y: auto;
+      z-index: 999;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+    }
+
+    .cat-dropdown-list.open { display: block; }
+
+    .cat-option {
+      padding: 10px 14px;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--text);
+      border-bottom: 1px solid rgba(51,65,85,0.4);
+      transition: background 0.15s;
+    }
+
+    .cat-option:last-child { border-bottom: 0; }
+    .cat-option:hover, .cat-option.highlighted { background: rgba(56,189,248,0.12); color: var(--accent); }
+    .cat-option.no-results { color: var(--muted); cursor: default; }
+    .cat-option.no-results:hover { background: none; color: var(--muted); }
+
+    /* ── Filter Bar ── */
+    .filter-bar {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 14px 16px;
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 16px;
+    }
+
+    .filter-bar label {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .filter-bar input,
+    .filter-bar select {
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 7px 10px;
+      font-size: 13px;
+      font-family: 'DM Sans', sans-serif;
+      min-width: 110px;
+      width: auto;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .filter-bar input:focus,
+    .filter-bar select:focus { border-color: var(--accent); }
+
+    .filter-bar select option { background: #0f1b2d; }
+
+    .filter-apply-btn {
+      padding: 7px 18px;
+      font-size: 13px;
+      border-radius: 7px;
+      align-self: flex-end;
+    }
+
+    .filter-clear-btn {
+      padding: 7px 12px;
+      font-size: 13px;
+      border-radius: 7px;
+      align-self: flex-end;
+      background: rgba(255,255,255,0.06);
+      color: var(--muted);
+    }
+
+    .filter-summary {
+      font-size: 12.5px;
+      color: var(--muted);
+      margin-bottom: 10px;
+      padding: 0 2px;
+    }
+
+    .filter-summary strong { color: var(--accent); }
+</style>
+</head>
+<body>
+
+  <!-- Sidebar overlay (mobile) -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+  <!-- ══ SIDEBAR ══ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">💰</div>
+      <div>
+        <div class="sidebar-logo-text">FinanceOS</div>
+        <div class="sidebar-logo-sub">Personal Dashboard</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <span class="nav-group-label">Overview</span>
+      <button class="nav-item active" id="nav-dashboard" onclick="showSection('dashboard')">
+        <span class="nav-icon">⬛</span> Dashboard
+      </button>
+      <button class="nav-item" id="nav-users" onclick="showSection('users')" style="display:none;">
+        <span class="nav-icon">👥</span> Users
+      </button>
+      <button class="nav-item" id="nav-charts" onclick="showSection('charts')">
+        <span class="nav-icon">📊</span> Charts
+      </button>
+
+      <span class="nav-group-label">Manage</span>
+      <button class="nav-item" id="nav-transactions" onclick="showSection('transactions')">
+        <span class="nav-icon">↕️</span> Transactions
+      </button>
+      <button class="nav-item" id="nav-budgets" onclick="showSection('budgets')">
+        <span class="nav-icon">📋</span> Budgets
+      </button>
+      <button class="nav-item" id="nav-goals" onclick="showSection('goals')">
+        <span class="nav-icon">🎯</span> Goals
+      </button>
+      <button class="nav-item" id="nav-categories" onclick="showSection('categories')">
+        <span class="nav-icon">🏷️</span> Categories
+      </button>
+
+      <span class="nav-group-label">Net Worth</span>
+      <button class="nav-item" id="nav-assets" onclick="showSection('assets')">
+        <span class="nav-icon">📈</span> Assets
+      </button>
+      <button class="nav-item" id="nav-liabilities" onclick="showSection('liabilities')">
+        <span class="nav-icon">📉</span> Liabilities
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sub" style="font-size:11px; text-align:center; opacity:0.5;">FinanceOS v2.0</div>
+    </div>
+  </aside>
+
+  <!-- ══ APP SHELL ══ -->
+  <div class="app-shell">
+
+    <!-- ══ HEADER ══ -->
+    <header class="app-header">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <button class="hamburger" onclick="toggleSidebar()">☰</button>
+        <div class="header-left">
+          <div class="header-title" id="headerTitle">Dashboard</div>
+          <div class="header-sub" id="periodText">Loading current period...</div>
+        </div>
+      </div>
+      <div class="header-right">
+        <input id="apiUrl" type="text" class="api-input" value="http://127.0.0.1:8000/dashboard/overview" />
+        <button class="header-btn" id="refreshBtn">⟳ Refresh</button>
+        <button class="header-btn" onclick="logout()" style="background:#ef4444;">Logout</button>
+      </div>
+    </header>
+
+    <!-- ══ MAIN CONTENT ══ -->
+    <main class="main-content">
+      <div id="errorBox" class="error"></div>
+
+      <!-- DASHBOARD SECTION -->
+    <section id="dashboard">
+      <div class="grid-cards">
+        <div class="card">
+          <h3>Monthly Income</h3>
+          <div class="value" id="incomeValue">—</div>
+          <div class="sub" id="transactionCount">Transactions: —</div>
+        </div>
+        <div class="card">
+          <h3>Monthly Expenses</h3>
+          <div class="value" id="expenseValue">—</div>
+          <div class="sub">Current month actual spend</div>
+        </div>
+        <div class="card">
+          <h3>Monthly Savings</h3>
+          <div class="value" id="savingsValue">—</div>
+          <div class="sub" id="savingsRateText">Savings rate: —</div>
+        </div>
+        <div class="card">
+          <h3>Net Worth</h3>
+          <div class="value" id="networthValue">—</div>
+          <div class="sub" id="networthBreakdown">Assets: — | Liabilities: —</div>
+        </div>
+        <div class="card">
+          <h3>Financial Score</h3>
+          <div class="value" id="scoreValue">—</div>
+          <div class="sub"><span id="scoreStatus" class="pill fair">—</span></div>
+        </div>
+      </div>
+
+      <section class="layout">
+        <div class="panel">
+          <h3>Monthly Plan vs Actual</h3>
+          <div id="monthlyPlanContent" class="sub">No monthly plan data.</div>
+        </div>
+        <div class="panel">
+          <h3>Yearly Plan and Forecast</h3>
+          <div id="yearlyPlanContent" class="sub">No yearly plan data.</div>
+        </div>
+      </section>
+
+      <section class="two-col">
+        <div class="panel">
+          <h3>Category Budgets</h3>
+          <div id="budgetTotals" class="sub" style="margin-bottom: 12px;">No budget data.</div>
+          <div id="budgetList"></div>
+        </div>
+        <div class="panel">
+          <h3>Goals Progress</h3>
+          <div id="goalSummary" class="sub" style="margin-bottom: 12px;">No goals yet.</div>
+          <div id="goalList"></div>
+        </div>
+      </section>
+
+      <!-- Dashboard inline charts -->
+      <div class="panel stack-gap">
+        <h3>Monthly Expenses by Category</h3>
+        <div class="chart-wrap" style="height:300px;">
+          <canvas id="chartMonthlyExpDash"></canvas>
+          <div id="chartMonthlyExpDashEmpty" class="chart-empty" style="display:none;">No transaction data yet.</div>
+        </div>
+      </div>
+
+      <div class="charts-grid">
+        <div class="panel">
+          <h3>Yearly Savings</h3>
+          <div class="chart-wrap" style="height:260px;">
+            <canvas id="chartYearlySavDash"></canvas>
+            <div id="chartYearlySavDashEmpty" class="chart-empty" style="display:none;">No transaction data yet.</div>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>Net Worth Tracking</h3>
+          <div class="chart-wrap" style="height:260px;">
+            <canvas id="chartNetworthDash"></canvas>
+            <div id="chartNetworthDashEmpty" class="chart-empty" style="display:none;">No asset / liability data yet.</div>
+          </div>
+        </div>
+      </div>
+
+      <section class="panel stack-gap">
+        <h3>Raw Dashboard JSON</h3>
+        <pre id="rawJson">Waiting for data...</pre>
+      </section>
+    </section>
+
+    <!-- TRANSACTIONS SECTION -->
+    <section id="transactions">
+      <div class="panel stack-gap">
+        <h3>Transactions Manager</h3>
+        <div class="two-col">
+          <div>
+            <div class="sub" style="margin-bottom: 12px;">Use this form to add or update transactions from the frontend.</div>
+            <form id="transactionForm">
+              <input type="hidden" id="transactionId" />
+              <div class="two-col" style="margin-bottom:12px;">
+                <input id="transactionType" type="text" placeholder="Type: income or expense" required />
+                <div class="cat-dropdown-wrap">
+                  <input id="transactionCategory" type="text" class="cat-search-input" placeholder="Select or search category…" autocomplete="off" required />
+                  <span class="cat-dropdown-arrow">▾</span>
+                  <div id="transactionCategoryList" class="cat-dropdown-list"></div>
+                </div>
+              </div>
+              <div class="two-col" style="margin-bottom:12px;">
+                <input id="transactionAmount" type="text" placeholder="Amount" required />
+                <input id="transactionDate" type="text" placeholder="Date YYYY-MM-DD" required />
+              </div>
+              <div style="margin-bottom:12px;">
+                <input id="transactionDescription" type="text" placeholder="Description" />
+              </div>
+              <div class="actions">
+                <button type="submit" id="transactionSubmitBtn">Save Transaction</button>
+                <button type="button" id="transactionResetBtn" class="secondary-btn">Clear</button>
+                <button type="button" id="loadTransactionsBtn">Reload Table</button>
+              </div>
+            </form>
+            <div id="transactionFormMessage" class="sub" style="margin-top:12px;"></div>
+          </div>
+          <div>
+            <div class="sub" style="margin-bottom:12px;">API base assumed from your dashboard URL.</div>
+            <div class="stat-row"><span>Transactions endpoint</span><strong id="transactionsEndpointText">—</strong></div>
+            <div class="stat-row"><span>Mode</span><strong id="transactionModeText">Create</strong></div>
+            <div class="stat-row"><span>Selected transaction id</span><strong id="selectedTransactionIdText">—</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel stack-gap">
+        <h3>Transactions Table</h3>
+
+        <!-- Filter bar -->
+        <div class="filter-bar">
+          <label>Month
+            <input type="number" id="txFilterMonth" placeholder="e.g. 3" min="1" max="12" style="width:80px;" />
+          </label>
+          <label>Year
+            <input type="number" id="txFilterYear" placeholder="e.g. 2026" min="2000" max="2100" style="width:100px;" />
+          </label>
+          <label>Type
+            <select id="txFilterType">
+              <option value="">All</option>
+              <option value="income">Income</option>
+              <option value="expense">Expense</option>
+            </select>
+          </label>
+          <label>Category
+            <input type="text" id="txFilterCategory" placeholder="Any" style="width:130px;" />
+          </label>
+          <button class="filter-apply-btn" onclick="applyTransactionFilter()">Apply</button>
+          <button class="filter-clear-btn" onclick="clearTransactionFilter()">Clear</button>
+        </div>
+        <div id="txFilterSummary" class="filter-summary"></div>
+
+        <div style="overflow:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Category</th>
+                <th>Amount</th>
+                <th>Description</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="transactionsTableBody">
+              <tr><td colspan="7" class="sub">Loading transactions...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- BUDGETS SECTION -->
+    <section id="budgets">
+      <div class="panel stack-gap">
+        <h3>Budgets Manager</h3>
+        <div class="two-col">
+          <div>
+            <div class="sub" style="margin-bottom: 12px;">Create or update category budgets for a month.</div>
+            <form id="budgetForm">
+              <input type="hidden" id="budgetId" />
+              <div class="two-col" style="margin-bottom:12px;">
+                <div class="cat-dropdown-wrap">
+                  <input id="budgetCategory" type="text" class="cat-search-input" placeholder="Select or search category…" autocomplete="off" required />
+                  <span class="cat-dropdown-arrow">▾</span>
+                  <div id="budgetCategoryList" class="cat-dropdown-list"></div>
+                </div>
+                <input id="budgetAmount" type="text" placeholder="Budget amount" required />
+              </div>
+              <div class="two-col" style="margin-bottom:12px;">
+                <input id="budgetMonth" type="text" placeholder="Month e.g. 3" required />
+                <input id="budgetYear" type="text" placeholder="Year e.g. 2026" required />
+              </div>
+              <div class="actions">
+                <button type="submit" id="budgetSubmitBtn">Save Budget</button>
+                <button type="button" id="budgetResetBtn" class="secondary-btn">Clear</button>
+                <button type="button" id="loadBudgetsBtn">Reload Table</button>
+              </div>
+            </form>
+            <div id="budgetFormMessage" class="sub" style="margin-top:12px;"></div>
+          </div>
+          <div>
+            <div class="sub" style="margin-bottom:12px;">Budget endpoint and selected mode.</div>
+            <div class="stat-row"><span>Budgets endpoint</span><strong id="budgetsEndpointText">—</strong></div>
+            <div class="stat-row"><span>Mode</span><strong id="budgetModeText">Create</strong></div>
+            <div class="stat-row"><span>Selected budget id</span><strong id="selectedBudgetIdText">—</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel stack-gap">
+        <h3>Budgets Table</h3>
+
+        <!-- Filter bar -->
+        <div class="filter-bar">
+          <label>Month
+            <input type="number" id="bdgFilterMonth" placeholder="e.g. 3" min="1" max="12" style="width:80px;" />
+          </label>
+          <label>Year
+            <input type="number" id="bdgFilterYear" placeholder="e.g. 2026" min="2000" max="2100" style="width:100px;" />
+          </label>
+          <label>Category
+            <input type="text" id="bdgFilterCategory" placeholder="Any" style="width:130px;" />
+          </label>
+          <button class="filter-apply-btn" onclick="applyBudgetFilter()">Apply</button>
+          <button class="filter-clear-btn" onclick="clearBudgetFilter()">Clear</button>
+        </div>
+        <div id="bdgFilterSummary" class="filter-summary"></div>
+
+        <div style="overflow:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Category</th>
+                <th>Month</th>
+                <th>Year</th>
+                <th>Amount</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="budgetsTableBody">
+              <tr><td colspan="6" class="sub">Loading budgets...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- GOALS SECTION -->
+    <section id="goals">
+      <div class="panel stack-gap">
+        <h3>Goals Manager</h3>
+        <div class="two-col">
+          <div>
+            <div class="sub" style="margin-bottom: 12px;">Create or update savings goals and track progress visually.</div>
+            <form id="goalForm">
+              <input type="hidden" id="goalId" />
+              <div class="two-col" style="margin-bottom:12px;">
+                <input id="goalName" type="text" placeholder="Goal name" required />
+                <input id="goalTargetAmount" type="text" placeholder="Target amount" required />
+              </div>
+              <div class="two-col" style="margin-bottom:12px;">
+                <input id="goalCurrentAmount" type="text" placeholder="Current amount saved" required />
+                <input id="goalTargetDate" type="text" placeholder="Target date YYYY-MM-DD" required />
+              </div>
+              <div class="actions">
+                <button type="submit" id="goalSubmitBtn">Save Goal</button>
+                <button type="button" id="goalResetBtn" class="secondary-btn">Clear</button>
+                <button type="button" id="loadGoalsBtn">Reload Table</button>
+              </div>
+            </form>
+            <div id="goalFormMessage" class="sub" style="margin-top:12px;"></div>
+          </div>
+          <div>
+            <div class="sub" style="margin-bottom:12px;">Goals endpoint and selected mode.</div>
+            <div class="stat-row"><span>Goals endpoint</span><strong id="goalsEndpointText">—</strong></div>
+            <div class="stat-row"><span>Mode</span><strong id="goalModeText">Create</strong></div>
+            <div class="stat-row"><span>Selected goal id</span><strong id="selectedGoalIdText">—</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel stack-gap">
+        <h3>Goals Table</h3>
+        <div style="overflow:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Target</th>
+                <th>Current</th>
+                <th>Remaining</th>
+                <th>Progress</th>
+                <th>Target Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="goalsTableBody">
+              <tr><td colspan="8" class="sub">Loading goals...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ASSETS SECTION -->
+    <section id="assets">
+      <div class="panel stack-gap">
+        <h3>Assets Manager</h3>
+        <div class="two-col">
+          <div>
+            <div class="sub" style="margin-bottom: 12px;">Create or update asset snapshots that feed net worth.</div>
+            <form id="assetForm">
+              <input type="hidden" id="assetId" />
+              <div class="two-col" style="margin-bottom:12px;">
+                <input id="assetName" type="text" placeholder="Asset name" required />
+                <input id="assetType" type="text" placeholder="Asset type e.g. bank, investment" required />
+              </div>
+              <div class="two-col" style="margin-bottom:12px;">
+                <input id="assetValue" type="text" placeholder="Asset value" required />
+                <input id="assetDate" type="text" placeholder="Snapshot date YYYY-MM-DD" required />
+              </div>
+              <div class="actions">
+                <button type="submit" id="assetSubmitBtn">Save Asset</button>
+                <button type="button" id="assetResetBtn" class="secondary-btn">Clear</button>
+                <button type="button" id="loadAssetsBtn">Reload Table</button>
+              </div>
+            </form>
+            <div id="assetFormMessage" class="sub" style="margin-top:12px;"></div>
+          </div>
+          <div>
+            <div class="sub" style="margin-bottom:12px;">Assets endpoint and selected mode.</div>
+            <div class="stat-row"><span>Assets endpoint</span><strong id="assetsEndpointText">—</strong></div>
+            <div class="stat-row"><span>Mode</span><strong id="assetModeText">Create</strong></div>
+            <div class="stat-row"><span>Selected asset id</span><strong id="selectedAssetIdText">—</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel stack-gap">
+        <h3>Assets Table</h3>
+
+        <!-- Filter bar -->
+        <div class="filter-bar">
+          <label>Snapshot From
+            <input type="date" id="astFilterFrom" />
+          </label>
+          <label>Snapshot To
+            <input type="date" id="astFilterTo" />
+          </label>
+          <label>Type
+            <input type="text" id="astFilterType" placeholder="e.g. bank" style="width:120px;" />
+          </label>
+          <button class="filter-apply-btn" onclick="applyAssetFilter()">Apply</button>
+          <button class="filter-clear-btn" onclick="clearAssetFilter()">Clear</button>
+        </div>
+        <div id="astFilterSummary" class="filter-summary"></div>
+
+        <div style="overflow:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Value</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="assetsTableBody">
+              <tr><td colspan="6" class="sub">Loading assets...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- LIABILITIES SECTION -->
+    <section id="liabilities">
+      <div class="panel stack-gap">
+        <h3>Liabilities Manager</h3>
+        <div class="two-col">
+          <div>
+            <div class="sub" style="margin-bottom: 12px;">Create or update liability snapshots that feed net worth.</div>
+            <form id="liabilityForm">
+              <input type="hidden" id="liabilityId" />
+              <div class="two-col" style="margin-bottom:12px;">
+                <input id="liabilityName" type="text" placeholder="Liability name" required />
+                <input id="liabilityType" type="text" placeholder="Liability type e.g. loan, credit_card" required />
+              </div>
+              <div class="two-col" style="margin-bottom:12px;">
+                <input id="liabilityAmount" type="text" placeholder="Liability amount" required />
+                <input id="liabilityDate" type="text" placeholder="Snapshot date YYYY-MM-DD" required />
+              </div>
+              <div class="actions">
+                <button type="submit" id="liabilitySubmitBtn">Save Liability</button>
+                <button type="button" id="liabilityResetBtn" class="secondary-btn">Clear</button>
+                <button type="button" id="loadLiabilitiesBtn">Reload Table</button>
+              </div>
+            </form>
+            <div id="liabilityFormMessage" class="sub" style="margin-top:12px;"></div>
+          </div>
+          <div>
+            <div class="sub" style="margin-bottom:12px;">Liabilities endpoint and selected mode.</div>
+            <div class="stat-row"><span>Liabilities endpoint</span><strong id="liabilitiesEndpointText">—</strong></div>
+            <div class="stat-row"><span>Mode</span><strong id="liabilityModeText">Create</strong></div>
+            <div class="stat-row"><span>Selected liability id</span><strong id="selectedLiabilityIdText">—</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel stack-gap" style="margin-bottom: 24px;">
+        <h3>Liabilities Table</h3>
+
+        <!-- Filter bar -->
+        <div class="filter-bar">
+          <label>Snapshot From
+            <input type="date" id="libFilterFrom" />
+          </label>
+          <label>Snapshot To
+            <input type="date" id="libFilterTo" />
+          </label>
+          <label>Type
+            <input type="text" id="libFilterType" placeholder="e.g. loan" style="width:120px;" />
+          </label>
+          <button class="filter-apply-btn" onclick="applyLiabilityFilter()">Apply</button>
+          <button class="filter-clear-btn" onclick="clearLiabilityFilter()">Clear</button>
+        </div>
+        <div id="libFilterSummary" class="filter-summary"></div>
+
+        <div style="overflow:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="liabilitiesTableBody">
+              <tr><td colspan="6" class="sub">Loading liabilities...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════
+         CATEGORIES SECTION
+         ════════════════════════════════════════════ -->
+    <!-- ════════════════════════════════════════════
+         USERS SECTION
+         ════════════════════════════════════════════ -->
+    <section id="users">
+      <div class="panel stack-gap">
+        <h3>Users Manager</h3>
+        <div class="two-col">
+          <div>
+            <div class="sub" style="margin-bottom:12px;">Admin can create, update, reset password, and delete user accounts here.</div>
+            <form id="userForm">
+              <input type="hidden" id="userId" />
+              <div class="two-col" style="margin-bottom:12px;">
+                <input id="userUsername" type="text" placeholder="Username" required />
+                <input id="userRole" type="text" placeholder="Role: admin or user" required />
+              </div>
+              <div class="two-col" style="margin-bottom:12px;">
+                <input id="userPassword" type="text" placeholder="Password (required for create, optional for update)" />
+                <input id="userActive" type="text" placeholder="Active: true or false" required />
+              </div>
+              <div class="actions">
+                <button type="submit" id="userSubmitBtn">Save User</button>
+                <button type="button" id="userResetBtn" class="secondary-btn">Clear</button>
+                <button type="button" id="loadUsersBtn">Reload Table</button>
+              </div>
+            </form>
+            <div id="userFormMessage" class="sub" style="margin-top:12px;"></div>
+          </div>
+          <div>
+            <div class="sub" style="margin-bottom:12px;">Users endpoint and selected mode.</div>
+            <div class="stat-row"><span>Users endpoint</span><strong id="usersEndpointText">—</strong></div>
+            <div class="stat-row"><span>Mode</span><strong id="userModeText">Create</strong></div>
+            <div class="stat-row"><span>Selected user id</span><strong id="selectedUserIdText">—</strong></div>
+            <div class="stat-row"><span>Logged in role</span><strong id="currentRoleText">—</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel stack-gap" style="margin-bottom:24px;">
+        <h3>Users Table</h3>
+        <div style="overflow:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Role</th>
+                <th>Active</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody">
+              <tr><td colspan="5" class="sub">Admin access required.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════
+         CATEGORIES SECTION
+         ════════════════════════════════════════════ -->
+    <section id="categories">
+      <div class="panel stack-gap">
+        <h3>Categories Manager</h3>
+        <div class="two-col">
+          <div>
+            <div class="sub" style="margin-bottom:12px;">Create categories here — they'll appear as searchable dropdowns in Transactions and Budgets.</div>
+            <form id="categoryForm">
+              <input type="hidden" id="categoryId" />
+              <div class="two-col" style="margin-bottom:12px;">
+                <input id="categoryName" type="text" placeholder="Category name e.g. Food" required />
+                <input id="categoryType" type="text" placeholder="Type: expense or income" required />
+              </div>
+              <div style="margin-bottom:12px;">
+                <input id="categoryDescription" type="text" placeholder="Description (optional)" />
+              </div>
+              <div class="actions">
+                <button type="submit" id="categorySubmitBtn">Save Category</button>
+                <button type="button" id="categoryResetBtn" class="secondary-btn">Clear</button>
+                <button type="button" id="loadCategoriesBtn">Reload Table</button>
+              </div>
+            </form>
+            <div id="categoryFormMessage" class="sub" style="margin-top:12px;"></div>
+          </div>
+          <div>
+            <div class="sub" style="margin-bottom:12px;">Categories endpoint and selected mode.</div>
+            <div class="stat-row"><span>Categories endpoint</span><strong id="categoriesEndpointText">—</strong></div>
+            <div class="stat-row"><span>Mode</span><strong id="categoryModeText">Create</strong></div>
+            <div class="stat-row"><span>Selected category id</span><strong id="selectedCategoryIdText">—</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel stack-gap" style="margin-bottom:24px;">
+        <h3>Categories Table</h3>
+        <div style="overflow:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Description</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="categoriesTableBody">
+              <tr><td colspan="5" class="sub">Loading categories...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════
+         CHARTS SECTION
+         ════════════════════════════════════════════ -->
+    <section id="charts">
+
+      <!-- 1. Monthly Expenses by Category -->
+      <div class="panel stack-gap">
+        <h3>1 · Monthly Expenses by Category</h3>
+        <div class="chart-controls">
+          <label>From
+            <input type="date" id="mExpFrom" />
+          </label>
+          <label>To
+            <input type="date" id="mExpTo" />
+          </label>
+          <label>Categories (comma-separated, blank = all)
+            <input type="text" id="mExpCats" placeholder="e.g. food, rent, transport" style="min-width:220px;" />
+          </label>
+          <button onclick="renderMonthlyExpenseChart()">Apply</button>
+        </div>
+        <div class="chart-wrap"><canvas id="chartMonthlyExp"></canvas><div id="chartMonthlyExpEmpty" class="chart-empty" style="display:none;">No data for selected range / categories.</div></div>
+      </div>
+
+      <!-- 2. Yearly Expenses by Category -->
+      <div class="panel stack-gap">
+        <h3>2 · Yearly Expenses by Category</h3>
+        <div class="chart-controls">
+          <label>From Year
+            <input type="date" id="yExpFrom" />
+          </label>
+          <label>To Year
+            <input type="date" id="yExpTo" />
+          </label>
+          <label>Categories (comma-separated, blank = all)
+            <input type="text" id="yExpCats" placeholder="e.g. food, rent" style="min-width:220px;" />
+          </label>
+          <button onclick="renderYearlyExpenseChart()">Apply</button>
+        </div>
+        <div class="chart-wrap"><canvas id="chartYearlyExp"></canvas><div id="chartYearlyExpEmpty" class="chart-empty" style="display:none;">No data for selected range / categories.</div></div>
+      </div>
+
+      <div class="charts-grid">
+        <!-- 3. Monthly Savings -->
+        <div class="panel">
+          <h3>3 · Monthly Savings</h3>
+          <div class="chart-controls">
+            <label>From
+              <input type="date" id="mSavFrom" />
+            </label>
+            <label>To
+              <input type="date" id="mSavTo" />
+            </label>
+            <button onclick="renderMonthlySavingsChart()">Apply</button>
+          </div>
+          <div class="chart-wrap" style="height:260px;"><canvas id="chartMonthlySav"></canvas><div id="chartMonthlySavEmpty" class="chart-empty" style="display:none;">No data.</div></div>
+        </div>
+
+        <!-- 4. Yearly Savings -->
+        <div class="panel">
+          <h3>4 · Yearly Savings</h3>
+          <div class="chart-controls">
+            <label>From Year
+              <input type="date" id="ySavFrom" />
+            </label>
+            <label>To Year
+              <input type="date" id="ySavTo" />
+            </label>
+            <button onclick="renderYearlySavingsChart()">Apply</button>
+          </div>
+          <div class="chart-wrap" style="height:260px;"><canvas id="chartYearlySav"></canvas><div id="chartYearlySavEmpty" class="chart-empty" style="display:none;">No data.</div></div>
+        </div>
+      </div>
+
+      <!-- 5. Net Worth Tracking -->
+      <div class="panel stack-gap" style="margin-bottom:24px;">
+        <h3>5 · Net Worth Tracking</h3>
+        <div class="chart-controls">
+          <label>From
+            <input type="date" id="nwFrom" />
+          </label>
+          <label>To
+            <input type="date" id="nwTo" />
+          </label>
+          <button onclick="renderNetworthChart()">Apply</button>
+        </div>
+        <div class="chart-wrap"><canvas id="chartNetworth"></canvas><div id="chartNetworthEmpty" class="chart-empty" style="display:none;">No data for selected range.</div></div>
+      </div>
+
+    </section>
+
+    </main>
+  </div><!-- end .app-shell -->
+
+  <script>
+    const apiUrlInput = document.getElementById('apiUrl');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const errorBox = document.getElementById('errorBox');
+
+    /* ══════════════════════════════════════════════
+       AUTH HELPERS
+       ══════════════════════════════════════════════ */
+
+    function authHeaders(extra = {}) {
+      const token = localStorage.getItem("token");
+      return {
+        ...extra,
+        "Authorization": "Bearer " + token
+      };
+    }
+
+    function logout() {
+      localStorage.removeItem("token");
+      window.location = "login.html";
+    }
+
+    // Wrapper: injects auth headers and redirects to login on 401
+    async function authFetch(url, options = {}) {
+      const response = await fetch(url, {
+        ...options,
+        headers: authHeaders(options.headers || {})
+      });
+      if (response.status === 401) {
+        logout();
+        throw new Error('Session expired. Please log in again.');
+      }
+      return response;
+    }
+
+    const transactionForm = document.getElementById('transactionForm');
+    const transactionIdInput = document.getElementById('transactionId');
+    const transactionTypeInput = document.getElementById('transactionType');
+    const transactionCategoryInput = document.getElementById('transactionCategory');
+    const transactionAmountInput = document.getElementById('transactionAmount');
+    const transactionDateInput = document.getElementById('transactionDate');
+    const transactionDescriptionInput = document.getElementById('transactionDescription');
+    const transactionSubmitBtn = document.getElementById('transactionSubmitBtn');
+    const transactionResetBtn = document.getElementById('transactionResetBtn');
+    const loadTransactionsBtn = document.getElementById('loadTransactionsBtn');
+    const transactionFormMessage = document.getElementById('transactionFormMessage');
+    const transactionsTableBody = document.getElementById('transactionsTableBody');
+    const transactionsEndpointText = document.getElementById('transactionsEndpointText');
+    const transactionModeText = document.getElementById('transactionModeText');
+    const selectedTransactionIdText = document.getElementById('selectedTransactionIdText');
+
+    const budgetForm = document.getElementById('budgetForm');
+    const budgetIdInput = document.getElementById('budgetId');
+    const budgetCategoryInput = document.getElementById('budgetCategory');
+    const budgetAmountInput = document.getElementById('budgetAmount');
+    const budgetMonthInput = document.getElementById('budgetMonth');
+    const budgetYearInput = document.getElementById('budgetYear');
+    const budgetSubmitBtn = document.getElementById('budgetSubmitBtn');
+    const budgetResetBtn = document.getElementById('budgetResetBtn');
+    const loadBudgetsBtn = document.getElementById('loadBudgetsBtn');
+    const budgetFormMessage = document.getElementById('budgetFormMessage');
+    const budgetsTableBody = document.getElementById('budgetsTableBody');
+    const budgetsEndpointText = document.getElementById('budgetsEndpointText');
+    const budgetModeText = document.getElementById('budgetModeText');
+    const selectedBudgetIdText = document.getElementById('selectedBudgetIdText');
+
+    const goalForm = document.getElementById('goalForm');
+    const goalIdInput = document.getElementById('goalId');
+    const goalNameInput = document.getElementById('goalName');
+    const goalTargetAmountInput = document.getElementById('goalTargetAmount');
+    const goalCurrentAmountInput = document.getElementById('goalCurrentAmount');
+    const goalTargetDateInput = document.getElementById('goalTargetDate');
+    const goalSubmitBtn = document.getElementById('goalSubmitBtn');
+    const goalResetBtn = document.getElementById('goalResetBtn');
+    const loadGoalsBtn = document.getElementById('loadGoalsBtn');
+    const goalFormMessage = document.getElementById('goalFormMessage');
+    const goalsTableBody = document.getElementById('goalsTableBody');
+    const goalsEndpointText = document.getElementById('goalsEndpointText');
+    const goalModeText = document.getElementById('goalModeText');
+    const selectedGoalIdText = document.getElementById('selectedGoalIdText');
+
+    const assetForm = document.getElementById('assetForm');
+    const assetIdInput = document.getElementById('assetId');
+    const assetNameInput = document.getElementById('assetName');
+    const assetTypeInput = document.getElementById('assetType');
+    const assetValueInput = document.getElementById('assetValue');
+    const assetDateInput = document.getElementById('assetDate');
+    const assetSubmitBtn = document.getElementById('assetSubmitBtn');
+    const assetResetBtn = document.getElementById('assetResetBtn');
+    const loadAssetsBtn = document.getElementById('loadAssetsBtn');
+    const assetFormMessage = document.getElementById('assetFormMessage');
+    const assetsTableBody = document.getElementById('assetsTableBody');
+    const assetsEndpointText = document.getElementById('assetsEndpointText');
+    const assetModeText = document.getElementById('assetModeText');
+    const selectedAssetIdText = document.getElementById('selectedAssetIdText');
+
+    const liabilityForm = document.getElementById('liabilityForm');
+    const liabilityIdInput = document.getElementById('liabilityId');
+    const liabilityNameInput = document.getElementById('liabilityName');
+    const liabilityTypeInput = document.getElementById('liabilityType');
+    const liabilityAmountInput = document.getElementById('liabilityAmount');
+    const liabilityDateInput = document.getElementById('liabilityDate');
+    const liabilitySubmitBtn = document.getElementById('liabilitySubmitBtn');
+    const liabilityResetBtn = document.getElementById('liabilityResetBtn');
+    const loadLiabilitiesBtn = document.getElementById('loadLiabilitiesBtn');
+
+    const userForm           = document.getElementById('userForm');
+    const userIdInput        = document.getElementById('userId');
+    const userUsernameInput  = document.getElementById('userUsername');
+    const userRoleInput      = document.getElementById('userRole');
+    const userPasswordInput  = document.getElementById('userPassword');
+    const userActiveInput    = document.getElementById('userActive');
+    const userSubmitBtn      = document.getElementById('userSubmitBtn');
+    const userResetBtn       = document.getElementById('userResetBtn');
+    const loadUsersBtn       = document.getElementById('loadUsersBtn');
+    const userFormMessage    = document.getElementById('userFormMessage');
+    const usersTableBody     = document.getElementById('usersTableBody');
+    const usersEndpointText  = document.getElementById('usersEndpointText');
+    const userModeText       = document.getElementById('userModeText');
+    const selectedUserIdText = document.getElementById('selectedUserIdText');
+    const currentRoleText    = document.getElementById('currentRoleText');
+    const liabilityFormMessage = document.getElementById('liabilityFormMessage');
+    const liabilitiesTableBody = document.getElementById('liabilitiesTableBody');
+    const liabilitiesEndpointText = document.getElementById('liabilitiesEndpointText');
+    const liabilityModeText = document.getElementById('liabilityModeText');
+    const selectedLiabilityIdText = document.getElementById('selectedLiabilityIdText');
+
+    function currency(value) {
+      if (value === null || value === undefined || Number.isNaN(Number(value))) return '—';
+      return new Intl.NumberFormat('en-GB', {
+        style: 'currency',
+        currency: 'GBP',
+        maximumFractionDigits: 0
+      }).format(Number(value));
+    }
+
+    function pct(value) {
+      if (value === null || value === undefined || Number.isNaN(Number(value))) return '—';
+      return `${Number(value).toFixed(2)}%`;
+    }
+
+    function statusClass(status) {
+      const value = (status || '').toLowerCase();
+      if (value === 'strong') return 'strong';
+      if (value === 'good') return 'good';
+      if (value === 'fair') return 'fair';
+      return 'poor';
+    }
+
+    function getApiBase() {
+      const dashboardUrl = apiUrlInput.value.trim();
+      return dashboardUrl.replace('/dashboard/overview', '');
+    }
+
+    function getTransactionsEndpoint() { return `${getApiBase()}/transactions/`; }
+    function getBudgetsEndpoint()      { return `${getApiBase()}/budgets/`; }
+    function getGoalsEndpoint()        { return `${getApiBase()}/goals/`; }
+    function getAssetsEndpoint()       { return `${getApiBase()}/assets/`; }
+    function getLiabilitiesEndpoint()  { return `${getApiBase()}/liabilities/`; }
+    function getUsersEndpoint()        { return `${getApiBase()}/auth/admin/users`; }
+
+    function renderMonthlyPlan(plan) {
+      const el = document.getElementById('monthlyPlanContent');
+      if (!plan) {
+        el.innerHTML = '<div class="sub">No monthly plan found for the current month.</div>';
+        return;
+      }
+      el.innerHTML = `
+        <div class="stat-row"><span>Planned income</span><strong>${currency(plan.planned.income)}</strong></div>
+        <div class="stat-row"><span>Actual income</span><strong>${currency(plan.actual.income)}</strong></div>
+        <div class="stat-row"><span>Income difference</span><strong>${currency(plan.difference.income)}</strong></div>
+        <div class="stat-row"><span>Planned expense</span><strong>${currency(plan.planned.expense)}</strong></div>
+        <div class="stat-row"><span>Actual expense</span><strong>${currency(plan.actual.expense)}</strong></div>
+        <div class="stat-row"><span>Expense difference</span><strong>${currency(plan.difference.expense)}</strong></div>
+        <div class="stat-row"><span>Planned savings</span><strong>${currency(plan.planned.savings)}</strong></div>
+        <div class="stat-row"><span>Actual savings</span><strong>${currency(plan.actual.savings)}</strong></div>
+        <div class="stat-row"><span>Savings difference</span><strong>${currency(plan.difference.savings)}</strong></div>
+      `;
+    }
+
+    function renderYearlyPlan(plan) {
+      const el = document.getElementById('yearlyPlanContent');
+      if (!plan) {
+        el.innerHTML = '<div class="sub">No yearly plan found for the current year.</div>';
+        return;
+      }
+      el.innerHTML = `
+        <div class="stat-row"><span>Planned income</span><strong>${currency(plan.planned.income)}</strong></div>
+        <div class="stat-row"><span>Income so far</span><strong>${currency(plan.so_far.income)}</strong></div>
+        <div class="stat-row"><span>Forecast income</span><strong>${currency(plan.forecast.income)}</strong></div>
+        <div class="stat-row"><span>Planned expense</span><strong>${currency(plan.planned.expense)}</strong></div>
+        <div class="stat-row"><span>Expense so far</span><strong>${currency(plan.so_far.expense)}</strong></div>
+        <div class="stat-row"><span>Forecast expense</span><strong>${currency(plan.forecast.expense)}</strong></div>
+        <div class="stat-row"><span>Planned savings</span><strong>${currency(plan.planned.savings)}</strong></div>
+        <div class="stat-row"><span>Savings so far</span><strong>${currency(plan.so_far.savings)}</strong></div>
+        <div class="stat-row"><span>Forecast savings</span><strong>${currency(plan.forecast.savings)}</strong></div>
+      `;
+    }
+
+    function renderBudgets(summary) {
+      const totals = document.getElementById('budgetTotals');
+      const list = document.getElementById('budgetList');
+
+      if (!summary || !summary.items || summary.items.length === 0) {
+        totals.textContent = 'No budget data for the current month.';
+        list.innerHTML = '';
+        return;
+      }
+
+      totals.textContent = `Budget ${currency(summary.total_budget)} • Spent ${currency(summary.total_spent)} • Remaining ${currency(summary.total_remaining)}`;
+
+      list.innerHTML = summary.items.map(item => {
+        const width = Math.min(Number(item.usage_percentage || 0), 100);
+        const statusCls = item.status === 'over_budget' ? 'poor' : item.status === 'on_budget' ? 'fair' : 'good';
+        return `
+          <div class="budget-item">
+            <div class="row-head">
+              <strong>${item.category}</strong>
+              <span class="pill ${statusCls}">${item.status.replaceAll('_', ' ')}</span>
+            </div>
+            <div class="sub" style="margin-bottom: 8px;">Budget ${currency(item.budget)} • Spent ${currency(item.actual_spent)} • Remaining ${currency(item.remaining)}</div>
+            <div class="progress"><span style="width:${width}%"></span></div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderGoals(goals) {
+      const summary = document.getElementById('goalSummary');
+      const list = document.getElementById('goalList');
+
+      if (!goals || !goals.items || goals.items.length === 0) {
+        summary.textContent = 'No goals found.';
+        list.innerHTML = '';
+        return;
+      }
+
+      summary.textContent = `${goals.count} goal(s) • Average progress ${pct(goals.average_progress_percentage)}`;
+
+      list.innerHTML = goals.items.map(goal => {
+        const width = Math.min(Number(goal.progress_percentage || 0), 100);
+        return `
+          <div class="goal-item">
+            <div class="row-head">
+              <strong>${goal.name}</strong>
+              <span>${pct(goal.progress_percentage)}</span>
+            </div>
+            <div class="sub" style="margin-bottom: 8px;">Saved ${currency(goal.current_amount)} of ${currency(goal.target_amount)} • Remaining ${currency(goal.remaining_amount)}</div>
+            <div class="progress"><span style="width:${width}%"></span></div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderDashboard(data) {
+      const periodEl = document.getElementById('periodText');
+      if (periodEl) periodEl.textContent = `Period: ${data.period.month}/${data.period.year}`;
+      document.getElementById('incomeValue').textContent = currency(data.monthly_summary.income);
+      document.getElementById('expenseValue').textContent = currency(data.monthly_summary.expenses);
+      document.getElementById('savingsValue').textContent = currency(data.monthly_summary.savings);
+      document.getElementById('transactionCount').textContent = `Transactions: ${data.monthly_summary.transaction_count}`;
+      document.getElementById('savingsRateText').textContent = `Savings rate: ${pct(data.monthly_summary.savings_rate)}`;
+      document.getElementById('networthValue').textContent = currency(data.networth.networth);
+      document.getElementById('networthBreakdown').textContent = `Assets: ${currency(data.networth.total_assets)} | Liabilities: ${currency(data.networth.total_liabilities)}`;
+      document.getElementById('scoreValue').textContent = data.financial_score.score;
+
+      const scoreStatus = document.getElementById('scoreStatus');
+      scoreStatus.textContent = data.financial_score.status;
+      scoreStatus.className = `pill ${statusClass(data.financial_score.status)}`;
+
+      renderMonthlyPlan(data.monthly_plan);
+      renderYearlyPlan(data.yearly_plan);
+      renderBudgets(data.budget_summary);
+      renderGoals(data.goals);
+      document.getElementById('rawJson').textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function loadDashboard() {
+      errorBox.style.display = 'none';
+      errorBox.textContent = '';
+
+      try {
+        const response = await authFetch(apiUrlInput.value.trim());
+        if (!response.ok) throw new Error(`Request failed with status ${response.status}`);
+        const data = await response.json();
+        renderDashboard(data);
+      } catch (error) {
+        errorBox.style.display = 'block';
+        errorBox.textContent = `Could not load dashboard data. ${error.message}. If you opened this file directly in the browser, add CORS to FastAPI or serve the frontend through a local web server.`;
+      }
+    }
+
+    function setTransactionMode(mode, id = '') {
+      transactionModeText.textContent = mode;
+      selectedTransactionIdText.textContent = id || '—';
+      transactionSubmitBtn.textContent = mode === 'Edit' ? 'Update Transaction' : 'Save Transaction';
+    }
+
+    function resetTransactionForm() {
+      transactionIdInput.value = '';
+      transactionTypeInput.value = '';
+      transactionCategoryInput.value = '';
+      transactionAmountInput.value = '';
+      transactionDateInput.value = '';
+      transactionDescriptionInput.value = '';
+      transactionFormMessage.textContent = '';
+      setTransactionMode('Create');
+    }
+
+    function fillTransactionForm(item) {
+      transactionIdInput.value = item.id;
+      transactionTypeInput.value = item.type;
+      transactionCategoryInput.value = item.category;
+      transactionAmountInput.value = item.amount;
+      transactionDateInput.value = item.date;
+      transactionDescriptionInput.value = item.description || '';
+      setTransactionMode('Edit', item.id);
+      transactionFormMessage.textContent = `Editing transaction #${item.id}`;
+    }
+
+    async function loadTransactions() {
+      transactionsEndpointText.textContent = getTransactionsEndpoint();
+      transactionsTableBody.innerHTML = '<tr><td colspan="7" class="sub">Loading transactions...</td></tr>';
+
+      try {
+        const response = await authFetch(getTransactionsEndpoint());
+        if (!response.ok) throw new Error(`Request failed with status ${response.status}`);
+        const items = await response.json();
+        window.transactionCache = items;
+        renderTransactionRows(items);
+      } catch (error) {
+        transactionsTableBody.innerHTML = `<tr><td colspan="7" class="sub" style="color:#fecaca;">Could not load transactions. ${error.message}</td></tr>`;
+      }
+    }
+
+    window.editTransaction = function(id) {
+      const item = (window.transactionCache || []).find(x => x.id === id);
+      if (item) fillTransactionForm(item);
+    };
+
+    window.deleteTransaction = async function(id) {
+      if (!confirm(`Delete transaction #${id}?`)) return;
+      try {
+        const response = await authFetch(`${getTransactionsEndpoint()}${id}`, { method: 'DELETE' });
+        if (!response.ok) throw new Error(`Delete failed with status ${response.status}`);
+        transactionFormMessage.textContent = `Transaction #${id} deleted successfully.`;
+        await loadTransactions();
+        await loadDashboard();
+        if (transactionIdInput.value === String(id)) resetTransactionForm();
+      } catch (error) {
+        transactionFormMessage.textContent = `Delete failed: ${error.message}`;
+      }
+    };
+
+    transactionForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const payload = {
+        type: transactionTypeInput.value.trim(),
+        category: transactionCategoryInput.value.trim(),
+        amount: Number(transactionAmountInput.value),
+        date: transactionDateInput.value.trim(),
+        description: transactionDescriptionInput.value.trim() || null
+      };
+
+      const id = transactionIdInput.value.trim();
+      const isEdit = Boolean(id);
+      const url = isEdit ? `${getTransactionsEndpoint()}${id}` : getTransactionsEndpoint();
+      const method = isEdit ? 'PUT' : 'POST';
+
+      try {
+        const response = await authFetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.detail || `Request failed with status ${response.status}`);
+        transactionFormMessage.textContent = isEdit ? `Transaction #${result.id} updated successfully.` : `Transaction #${result.id} created successfully.`;
+        resetTransactionForm();
+        await loadTransactions();
+        await loadDashboard();
+      } catch (error) {
+        transactionFormMessage.textContent = `Save failed: ${error.message}`;
+      }
+    });
+
+    transactionResetBtn.addEventListener('click', resetTransactionForm);
+    loadTransactionsBtn.addEventListener('click', loadTransactions);
+
+    function setBudgetMode(mode, id = '') {
+      budgetModeText.textContent = mode;
+      selectedBudgetIdText.textContent = id || '—';
+      budgetSubmitBtn.textContent = mode === 'Edit' ? 'Update Budget' : 'Save Budget';
+    }
+
+    function resetBudgetForm() {
+      budgetIdInput.value = '';
+      budgetCategoryInput.value = '';
+      budgetAmountInput.value = '';
+      budgetMonthInput.value = '';
+      budgetYearInput.value = '';
+      budgetFormMessage.textContent = '';
+      setBudgetMode('Create');
+    }
+
+    function fillBudgetForm(item) {
+      budgetIdInput.value = item.id;
+      budgetCategoryInput.value = item.category;
+      budgetAmountInput.value = item.amount;
+      budgetMonthInput.value = item.month;
+      budgetYearInput.value = item.year;
+      setBudgetMode('Edit', item.id);
+      budgetFormMessage.textContent = `Editing budget #${item.id}`;
+    }
+
+    async function loadBudgets() {
+      budgetsEndpointText.textContent = getBudgetsEndpoint();
+      budgetsTableBody.innerHTML = '<tr><td colspan="6" class="sub">Loading budgets...</td></tr>';
+
+      try {
+        const response = await authFetch(getBudgetsEndpoint());
+        if (!response.ok) throw new Error(`Request failed with status ${response.status}`);
+        const items = await response.json();
+        window.budgetCache = items;
+        renderBudgetRows(items);
+      } catch (error) {
+        budgetsTableBody.innerHTML = `<tr><td colspan="6" class="sub" style="color:#fecaca;">Could not load budgets. ${error.message}</td></tr>`;
+      }
+    }
+
+    window.editBudget = function(id) {
+      const item = (window.budgetCache || []).find(x => x.id === id);
+      if (item) fillBudgetForm(item);
+    };
+
+    window.deleteBudget = async function(id) {
+      if (!confirm(`Delete budget #${id}?`)) return;
+      try {
+        const response = await authFetch(`${getBudgetsEndpoint()}${id}`, { method: 'DELETE' });
+        if (!response.ok) throw new Error(`Delete failed with status ${response.status}`);
+        budgetFormMessage.textContent = `Budget #${id} deleted successfully.`;
+        await loadBudgets();
+        await loadDashboard();
+        if (budgetIdInput.value === String(id)) resetBudgetForm();
+      } catch (error) {
+        budgetFormMessage.textContent = `Delete failed: ${error.message}`;
+      }
+    };
+
+    budgetForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const payload = {
+        category: budgetCategoryInput.value.trim(),
+        amount: Number(budgetAmountInput.value),
+        month: Number(budgetMonthInput.value),
+        year: Number(budgetYearInput.value)
+      };
+
+      const id = budgetIdInput.value.trim();
+      const isEdit = Boolean(id);
+      const url = isEdit ? `${getBudgetsEndpoint()}${id}` : getBudgetsEndpoint();
+      const method = isEdit ? 'PUT' : 'POST';
+
+      try {
+        const response = await authFetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.detail || `Request failed with status ${response.status}`);
+        budgetFormMessage.textContent = isEdit ? `Budget #${result.id} updated successfully.` : `Budget #${result.id} created successfully.`;
+        resetBudgetForm();
+        await loadBudgets();
+        await loadDashboard();
+      } catch (error) {
+        budgetFormMessage.textContent = `Save failed: ${error.message}`;
+      }
+    });
+
+    budgetResetBtn.addEventListener('click', resetBudgetForm);
+    loadBudgetsBtn.addEventListener('click', loadBudgets);
+
+    function setGoalMode(mode, id = '') {
+      goalModeText.textContent = mode;
+      selectedGoalIdText.textContent = id || '—';
+      goalSubmitBtn.textContent = mode === 'Edit' ? 'Update Goal' : 'Save Goal';
+    }
+
+    function resetGoalForm() {
+      goalIdInput.value = '';
+      goalNameInput.value = '';
+      goalTargetAmountInput.value = '';
+      goalCurrentAmountInput.value = '';
+      goalTargetDateInput.value = '';
+      goalFormMessage.textContent = '';
+      setGoalMode('Create');
+    }
+
+    function fillGoalForm(item) {
+      goalIdInput.value = item.id;
+      goalNameInput.value = item.name;
+      goalTargetAmountInput.value = item.target_amount;
+      goalCurrentAmountInput.value = item.current_amount;
+      goalTargetDateInput.value = item.target_date;
+      setGoalMode('Edit', item.id);
+      goalFormMessage.textContent = `Editing goal #${item.id}`;
+    }
+
+    async function loadGoals() {
+      goalsEndpointText.textContent = getGoalsEndpoint();
+      goalsTableBody.innerHTML = '<tr><td colspan="8" class="sub">Loading goals...</td></tr>';
+
+      try {
+        const response = await authFetch(getGoalsEndpoint());
+        if (!response.ok) throw new Error(`Request failed with status ${response.status}`);
+        const items = await response.json();
+
+        if (!items.length) {
+          goalsTableBody.innerHTML = '<tr><td colspan="8" class="sub">No goals found.</td></tr>';
+          return;
+        }
+
+        goalsTableBody.innerHTML = items.map(item => `
+          <tr>
+            <td>${item.id}</td>
+            <td>${item.name}</td>
+            <td>${currency(item.target_amount)}</td>
+            <td>${currency(item.current_amount)}</td>
+            <td>${currency(item.remaining_amount)}</td>
+            <td>${pct(item.progress_percentage)}</td>
+            <td>${item.target_date}</td>
+            <td>
+              <div class="actions">
+                <button type="button" onclick="window.editGoal(${item.id})">Edit</button>
+                <button type="button" class="danger-btn" onclick="window.deleteGoal(${item.id})">Delete</button>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+
+        window.goalCache = items;
+      } catch (error) {
+        goalsTableBody.innerHTML = `<tr><td colspan="8" class="sub" style="color:#fecaca;">Could not load goals. ${error.message}</td></tr>`;
+      }
+    }
+
+    window.editGoal = function(id) {
+      const item = (window.goalCache || []).find(x => x.id === id);
+      if (item) fillGoalForm(item);
+    };
+
+    window.deleteGoal = async function(id) {
+      if (!confirm(`Delete goal #${id}?`)) return;
+      try {
+        const response = await authFetch(`${getGoalsEndpoint()}${id}`, { method: 'DELETE' });
+        if (!response.ok) throw new Error(`Delete failed with status ${response.status}`);
+        goalFormMessage.textContent = `Goal #${id} deleted successfully.`;
+        await loadGoals();
+        await loadDashboard();
+        if (goalIdInput.value === String(id)) resetGoalForm();
+      } catch (error) {
+        goalFormMessage.textContent = `Delete failed: ${error.message}`;
+      }
+    };
+
+    goalForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const payload = {
+        name: goalNameInput.value.trim(),
+        target_amount: Number(goalTargetAmountInput.value),
+        current_amount: Number(goalCurrentAmountInput.value),
+        target_date: goalTargetDateInput.value.trim()
+      };
+
+      const id = goalIdInput.value.trim();
+      const isEdit = Boolean(id);
+      const url = isEdit ? `${getGoalsEndpoint()}${id}` : getGoalsEndpoint();
+      const method = isEdit ? 'PUT' : 'POST';
+
+      try {
+        const response = await authFetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.detail || `Request failed with status ${response.status}`);
+        goalFormMessage.textContent = isEdit ? `Goal #${result.id} updated successfully.` : `Goal #${result.id} created successfully.`;
+        resetGoalForm();
+        await loadGoals();
+        await loadDashboard();
+      } catch (error) {
+        goalFormMessage.textContent = `Save failed: ${error.message}`;
+      }
+    });
+
+    goalResetBtn.addEventListener('click', resetGoalForm);
+    loadGoalsBtn.addEventListener('click', loadGoals);
+
+    function setAssetMode(mode, id = '') {
+      assetModeText.textContent = mode;
+      selectedAssetIdText.textContent = id || '—';
+      assetSubmitBtn.textContent = mode === 'Edit' ? 'Update Asset' : 'Save Asset';
+    }
+
+    function resetAssetForm() {
+      assetIdInput.value = '';
+      assetNameInput.value = '';
+      assetTypeInput.value = '';
+      assetValueInput.value = '';
+      assetDateInput.value = '';
+      assetFormMessage.textContent = '';
+      setAssetMode('Create');
+    }
+
+    function fillAssetForm(item) {
+      assetIdInput.value = item.id;
+      assetNameInput.value = item.name;
+      assetTypeInput.value = item.type;
+      assetValueInput.value = item.value;
+      assetDateInput.value = item.date;
+      setAssetMode('Edit', item.id);
+      assetFormMessage.textContent = `Editing asset #${item.id}`;
+    }
+
+    async function loadAssets() {
+      assetsEndpointText.textContent = getAssetsEndpoint();
+      assetsTableBody.innerHTML = '<tr><td colspan="6" class="sub">Loading assets...</td></tr>';
+
+      try {
+        const response = await authFetch(getAssetsEndpoint());
+        if (!response.ok) throw new Error(`Request failed with status ${response.status}`);
+        const items = await response.json();
+        window.assetCache = items;
+        renderAssetRows(items);
+      } catch (error) {
+        assetsTableBody.innerHTML = `<tr><td colspan="6" class="sub" style="color:#fecaca;">Could not load assets. ${error.message}</td></tr>`;
+      }
+    }
+
+    window.editAsset = function(id) {
+      const item = (window.assetCache || []).find(x => x.id === id);
+      if (item) fillAssetForm(item);
+    };
+
+    window.deleteAsset = async function(id) {
+      if (!confirm(`Delete asset #${id}?`)) return;
+      try {
+        const response = await authFetch(`${getAssetsEndpoint()}${id}`, { method: 'DELETE' });
+        if (!response.ok) throw new Error(`Delete failed with status ${response.status}`);
+        assetFormMessage.textContent = `Asset #${id} deleted successfully.`;
+        await loadAssets();
+        await loadDashboard();
+        if (assetIdInput.value === String(id)) resetAssetForm();
+      } catch (error) {
+        assetFormMessage.textContent = `Delete failed: ${error.message}`;
+      }
+    };
+
+    assetForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const payload = {
+        name: assetNameInput.value.trim(),
+        type: assetTypeInput.value.trim(),
+        value: Number(assetValueInput.value),
+        date: assetDateInput.value.trim()
+      };
+
+      const id = assetIdInput.value.trim();
+      const isEdit = Boolean(id);
+      const url = isEdit ? `${getAssetsEndpoint()}${id}` : getAssetsEndpoint();
+      const method = isEdit ? 'PUT' : 'POST';
+
+      try {
+        const response = await authFetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.detail || `Request failed with status ${response.status}`);
+        assetFormMessage.textContent = isEdit ? `Asset #${result.id} updated successfully.` : `Asset #${result.id} created successfully.`;
+        resetAssetForm();
+        await loadAssets();
+        await loadDashboard();
+      } catch (error) {
+        assetFormMessage.textContent = `Save failed: ${error.message}`;
+      }
+    });
+
+    assetResetBtn.addEventListener('click', resetAssetForm);
+    loadAssetsBtn.addEventListener('click', loadAssets);
+
+    function setLiabilityMode(mode, id = '') {
+      liabilityModeText.textContent = mode;
+      selectedLiabilityIdText.textContent = id || '—';
+      liabilitySubmitBtn.textContent = mode === 'Edit' ? 'Update Liability' : 'Save Liability';
+    }
+
+    function resetLiabilityForm() {
+      liabilityIdInput.value = '';
+      liabilityNameInput.value = '';
+      liabilityTypeInput.value = '';
+      liabilityAmountInput.value = '';
+      liabilityDateInput.value = '';
+      liabilityFormMessage.textContent = '';
+      setLiabilityMode('Create');
+    }
+
+    function fillLiabilityForm(item) {
+      liabilityIdInput.value = item.id;
+      liabilityNameInput.value = item.name;
+      liabilityTypeInput.value = item.type;
+      liabilityAmountInput.value = item.amount;
+      liabilityDateInput.value = item.date;
+      setLiabilityMode('Edit', item.id);
+      liabilityFormMessage.textContent = `Editing liability #${item.id}`;
+    }
+
+    async function loadLiabilities() {
+      liabilitiesEndpointText.textContent = getLiabilitiesEndpoint();
+      liabilitiesTableBody.innerHTML = '<tr><td colspan="6" class="sub">Loading liabilities...</td></tr>';
+
+      try {
+        const response = await authFetch(getLiabilitiesEndpoint());
+        if (!response.ok) throw new Error(`Request failed with status ${response.status}`);
+        const items = await response.json();
+        window.liabilityCache = items;
+        renderLiabilityRows(items);
+      } catch (error) {
+        liabilitiesTableBody.innerHTML = `<tr><td colspan="6" class="sub" style="color:#fecaca;">Could not load liabilities. ${error.message}</td></tr>`;
+      }
+    }
+
+    window.editLiability = function(id) {
+      const item = (window.liabilityCache || []).find(x => x.id === id);
+      if (item) fillLiabilityForm(item);
+    };
+
+    window.deleteLiability = async function(id) {
+      if (!confirm(`Delete liability #${id}?`)) return;
+      try {
+        const response = await authFetch(`${getLiabilitiesEndpoint()}${id}`, { method: 'DELETE' });
+        if (!response.ok) throw new Error(`Delete failed with status ${response.status}`);
+        liabilityFormMessage.textContent = `Liability #${id} deleted successfully.`;
+        await loadLiabilities();
+        await loadDashboard();
+        if (liabilityIdInput.value === String(id)) resetLiabilityForm();
+      } catch (error) {
+        liabilityFormMessage.textContent = `Delete failed: ${error.message}`;
+      }
+    };
+
+    liabilityForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const payload = {
+        name: liabilityNameInput.value.trim(),
+        type: liabilityTypeInput.value.trim(),
+        amount: Number(liabilityAmountInput.value),
+        date: liabilityDateInput.value.trim()
+      };
+
+      const id = liabilityIdInput.value.trim();
+      const isEdit = Boolean(id);
+      const url = isEdit ? `${getLiabilitiesEndpoint()}${id}` : getLiabilitiesEndpoint();
+      const method = isEdit ? 'PUT' : 'POST';
+
+      try {
+        const response = await authFetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.detail || `Request failed with status ${response.status}`);
+        liabilityFormMessage.textContent = isEdit ? `Liability #${result.id} updated successfully.` : `Liability #${result.id} created successfully.`;
+        resetLiabilityForm();
+        await loadLiabilities();
+        await loadDashboard();
+      } catch (error) {
+        liabilityFormMessage.textContent = `Save failed: ${error.message}`;
+      }
+    });
+
+    liabilityResetBtn.addEventListener('click', resetLiabilityForm);
+    loadLiabilitiesBtn.addEventListener('click', loadLiabilities);
+
+    refreshBtn.addEventListener('click', loadDashboard);
+
+    /* ══════════════════════════════════════════════
+       USERS CRUD
+       ══════════════════════════════════════════════ */
+
+    async function loadCurrentUser() {
+      try {
+        const response = await authFetch(`${getApiBase()}/auth/me`);
+        if (!response.ok) throw new Error(`Status ${response.status}`);
+        const me = await response.json();
+        currentRoleText.textContent = me.role;
+        const usersNav = document.getElementById('nav-users');
+        if (me.role === 'admin') {
+          usersNav.style.display = 'flex';
+        } else {
+          usersNav.style.display = 'none';
+          const usersSection = document.getElementById('users');
+          if (usersSection) usersSection.style.display = 'none';
+        }
+      } catch (error) {
+        currentRoleText.textContent = 'unknown';
+      }
+    }
+
+    function setUserMode(mode, id = '') {
+      userModeText.textContent = mode;
+      selectedUserIdText.textContent = id || '—';
+      userSubmitBtn.textContent = mode === 'Edit' ? 'Update User' : 'Save User';
+    }
+
+    function resetUserForm() {
+      userIdInput.value = '';
+      userUsernameInput.value = '';
+      userRoleInput.value = '';
+      userPasswordInput.value = '';
+      userActiveInput.value = 'true';
+      userFormMessage.textContent = '';
+      setUserMode('Create');
+    }
+
+    function fillUserForm(item) {
+      userIdInput.value = item.id;
+      userUsernameInput.value = item.username;
+      userRoleInput.value = item.role;
+      userPasswordInput.value = '';
+      userActiveInput.value = String(item.is_active);
+      userFormMessage.textContent = `Editing user #${item.id}`;
+      setUserMode('Edit', item.id);
+    }
+
+    async function loadUsers() {
+      usersEndpointText.textContent = getUsersEndpoint();
+      usersTableBody.innerHTML = '<tr><td colspan="5" class="sub">Loading users...</td></tr>';
+      try {
+        const response = await authFetch(getUsersEndpoint());
+        if (!response.ok) {
+          if (response.status === 403) {
+            usersTableBody.innerHTML = '<tr><td colspan="5" class="sub">Admin access required.</td></tr>';
+            return;
+          }
+          throw new Error(`Request failed with status ${response.status}`);
+        }
+        const items = await response.json();
+        window.userCache = items;
+        if (!items.length) {
+          usersTableBody.innerHTML = '<tr><td colspan="5" class="sub">No users found.</td></tr>';
+          return;
+        }
+        usersTableBody.innerHTML = items.map(item => `
+          <tr>
+            <td>${item.id}</td>
+            <td>${item.username}</td>
+            <td><span class="pill ${item.role === 'admin' ? 'good' : 'fair'}">${item.role}</span></td>
+            <td><span class="pill ${item.is_active ? 'strong' : 'poor'}">${item.is_active ? 'Active' : 'Inactive'}</span></td>
+            <td>
+              <div class="actions">
+                <button type="button" onclick="window.editUser(${item.id})">Edit</button>
+                <button type="button" class="secondary-btn" onclick="window.resetUserPassword(${item.id}, '${item.username}')">Reset PW</button>
+                <button type="button" class="danger-btn" onclick="window.deleteUser(${item.id})">Delete</button>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+      } catch (error) {
+        usersTableBody.innerHTML = `<tr><td colspan="5" class="sub" style="color:#fecaca;">Could not load users. ${error.message}</td></tr>`;
+      }
+    }
+
+    window.editUser = function(id) {
+      const item = (window.userCache || []).find(x => x.id === id);
+      if (item) fillUserForm(item);
+    };
+
+    window.resetUserPassword = async function(id, username) {
+      const newPassword = prompt(`Enter new password for ${username}:`);
+      if (!newPassword) return;
+      try {
+        const response = await authFetch(`${getUsersEndpoint()}/${id}/reset-password`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ new_password: newPassword })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.detail || `Status ${response.status}`);
+        userFormMessage.textContent = result.message || 'Password reset successfully.';
+      } catch (error) {
+        userFormMessage.textContent = `Password reset failed: ${error.message}`;
+      }
+    };
+
+    window.deleteUser = async function(id) {
+      if (!confirm(`Delete user #${id}? This cannot be undone.`)) return;
+      try {
+        const response = await authFetch(`${getUsersEndpoint()}/${id}`, { method: 'DELETE' });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.detail || `Status ${response.status}`);
+        userFormMessage.textContent = result.message || `User #${id} deleted.`;
+        await loadUsers();
+        if (userIdInput.value === String(id)) resetUserForm();
+      } catch (error) {
+        userFormMessage.textContent = `Delete failed: ${error.message}`;
+      }
+    };
+
+    userForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const id = userIdInput.value.trim();
+      const isEdit = Boolean(id);
+      try {
+        if (isEdit) {
+          const payload = {
+            username: userUsernameInput.value.trim(),
+            role: userRoleInput.value.trim(),
+            is_active: userActiveInput.value.trim().toLowerCase() === 'true'
+          };
+          const response = await authFetch(`${getUsersEndpoint()}/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.detail || `Status ${response.status}`);
+          if (userPasswordInput.value.trim()) {
+            const pwRes = await authFetch(`${getUsersEndpoint()}/${id}/reset-password`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ new_password: userPasswordInput.value.trim() })
+            });
+            const pwResult = await pwRes.json();
+            if (!pwRes.ok) throw new Error(pwResult.detail || `PW reset failed: ${pwRes.status}`);
+          }
+          userFormMessage.textContent = `User #${result.id} updated successfully.`;
+        } else {
+          const payload = {
+            username: userUsernameInput.value.trim(),
+            password: userPasswordInput.value.trim(),
+            role: userRoleInput.value.trim()
+          };
+          if (!payload.password) throw new Error('Password is required when creating a user.');
+          const response = await authFetch(getUsersEndpoint(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.detail || `Status ${response.status}`);
+          userFormMessage.textContent = `User #${result.id} created successfully.`;
+        }
+        resetUserForm();
+        await loadUsers();
+      } catch (error) {
+        userFormMessage.textContent = `Save failed: ${error.message}`;
+      }
+    });
+
+    userResetBtn.addEventListener('click', resetUserForm);
+    loadUsersBtn.addEventListener('click', loadUsers);
+
+    /* ══════════════════════════════════════════════
+       CATEGORIES CRUD
+       ══════════════════════════════════════════════ */
+
+    const categoryForm             = document.getElementById('categoryForm');
+    const categoryIdInput          = document.getElementById('categoryId');
+    const categoryNameInput        = document.getElementById('categoryName');
+    const categoryTypeInput        = document.getElementById('categoryType');
+    const categoryDescriptionInput = document.getElementById('categoryDescription');
+    const categorySubmitBtn        = document.getElementById('categorySubmitBtn');
+    const categoryResetBtn         = document.getElementById('categoryResetBtn');
+    const loadCategoriesBtn        = document.getElementById('loadCategoriesBtn');
+    const categoryFormMessage      = document.getElementById('categoryFormMessage');
+    const categoriesTableBody      = document.getElementById('categoriesTableBody');
+    const categoriesEndpointText   = document.getElementById('categoriesEndpointText');
+    const categoryModeText         = document.getElementById('categoryModeText');
+    const selectedCategoryIdText   = document.getElementById('selectedCategoryIdText');
+
+    function getCategoriesEndpoint() { return `${getApiBase()}/categories/`; }
+
+    function setCategoryMode(mode, id = '') {
+      categoryModeText.textContent = mode;
+      selectedCategoryIdText.textContent = id || '—';
+      categorySubmitBtn.textContent = mode === 'Edit' ? 'Update Category' : 'Save Category';
+    }
+
+    function resetCategoryForm() {
+      categoryIdInput.value = '';
+      categoryNameInput.value = '';
+      categoryTypeInput.value = '';
+      categoryDescriptionInput.value = '';
+      categoryFormMessage.textContent = '';
+      setCategoryMode('Create');
+    }
+
+    function fillCategoryForm(item) {
+      categoryIdInput.value = item.id;
+      categoryNameInput.value = item.name;
+      categoryTypeInput.value = item.type || '';
+      categoryDescriptionInput.value = item.description || '';
+      setCategoryMode('Edit', item.id);
+      categoryFormMessage.textContent = `Editing category #${item.id}`;
+    }
+
+    async function loadCategories() {
+      categoriesEndpointText.textContent = getCategoriesEndpoint();
+      categoriesTableBody.innerHTML = '<tr><td colspan="5" class="sub">Loading categories...</td></tr>';
+
+      try {
+        const response = await authFetch(getCategoriesEndpoint());
+        if (!response.ok) throw new Error(`Request failed with status ${response.status}`);
+        const items = await response.json();
+        window.categoryCache = items;
+        rebuildDropdowns();
+
+        if (!items.length) {
+          categoriesTableBody.innerHTML = '<tr><td colspan="5" class="sub">No categories found. Create one above!</td></tr>';
+          return;
+        }
+
+        categoriesTableBody.innerHTML = items.map(item => `
+          <tr>
+            <td>${item.id}</td>
+            <td><strong>${item.name}</strong></td>
+            <td><span class="pill ${item.type === 'income' ? 'good' : 'fair'}">${item.type || '—'}</span></td>
+            <td class="sub">${item.description || '—'}</td>
+            <td>
+              <div class="actions">
+                <button type="button" onclick="window.editCategory(${item.id})">Edit</button>
+                <button type="button" class="danger-btn" onclick="window.deleteCategory(${item.id})">Delete</button>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+      } catch (error) {
+        categoriesTableBody.innerHTML = `<tr><td colspan="5" class="sub" style="color:#fecaca;">Could not load categories. ${error.message}</td></tr>`;
+      }
+    }
+
+    window.editCategory = function(id) {
+      const item = (window.categoryCache || []).find(x => x.id === id);
+      if (item) {
+        fillCategoryForm(item);
+        showSection('categories');
+      }
+    };
+
+    window.deleteCategory = async function(id) {
+      if (!confirm(`Delete category #${id}?`)) return;
+      try {
+        const response = await authFetch(`${getCategoriesEndpoint()}${id}`, { method: 'DELETE' });
+        if (!response.ok) throw new Error(`Delete failed with status ${response.status}`);
+        categoryFormMessage.textContent = `Category #${id} deleted successfully.`;
+        await loadCategories();
+        if (categoryIdInput.value === String(id)) resetCategoryForm();
+      } catch (error) {
+        categoryFormMessage.textContent = `Delete failed: ${error.message}`;
+      }
+    };
+
+    categoryForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const payload = {
+        name:        categoryNameInput.value.trim(),
+        type:        categoryTypeInput.value.trim() || null,
+        description: categoryDescriptionInput.value.trim() || null
+      };
+
+      const id = categoryIdInput.value.trim();
+      const isEdit = Boolean(id);
+      const url    = isEdit ? `${getCategoriesEndpoint()}${id}` : getCategoriesEndpoint();
+      const method = isEdit ? 'PUT' : 'POST';
+
+      try {
+        const response = await authFetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.detail || `Request failed with status ${response.status}`);
+        categoryFormMessage.textContent = isEdit
+          ? `Category "${result.name}" updated successfully.`
+          : `Category "${result.name}" created successfully.`;
+        resetCategoryForm();
+        await loadCategories();
+      } catch (error) {
+        categoryFormMessage.textContent = `Save failed: ${error.message}`;
+      }
+    });
+
+    categoryResetBtn.addEventListener('click', resetCategoryForm);
+    loadCategoriesBtn.addEventListener('click', loadCategories);
+
+    /* ══════════════════════════════════════════════
+       SEARCHABLE DROPDOWN ENGINE
+       ══════════════════════════════════════════════ */
+
+    // Registry: { inputId, listId, hiddenField? }
+    const dropdownRegistry = [
+      { inputId: 'transactionCategory', listId: 'transactionCategoryList' },
+      { inputId: 'budgetCategory',      listId: 'budgetCategoryList' }
+    ];
+
+    function rebuildDropdowns() {
+      dropdownRegistry.forEach(({ inputId, listId }) => {
+        const input = document.getElementById(inputId);
+        const list  = document.getElementById(listId);
+        if (!input || !list) return;
+        // Re-render options to reflect latest category list
+        renderOptions(input, list, input.value);
+      });
+    }
+
+    function renderOptions(input, list, search) {
+      const cats = window.categoryCache || [];
+      const q = (search || '').toLowerCase().trim();
+      const filtered = q
+        ? cats.filter(c => c.name.toLowerCase().includes(q))
+        : cats;
+
+      if (!filtered.length) {
+        list.innerHTML = '<div class="cat-option no-results">No categories found — create one in 🏷️ Categories</div>';
+        return;
+      }
+
+      list.innerHTML = filtered.map(c => `
+        <div class="cat-option" data-value="${c.name}">
+          ${c.name}${c.type ? ` <span style="font-size:11px;color:var(--muted);">(${c.type})</span>` : ''}
+        </div>
+      `).join('');
+
+      list.querySelectorAll('.cat-option:not(.no-results)').forEach(opt => {
+        opt.addEventListener('mousedown', (e) => {
+          e.preventDefault();
+          input.value = opt.dataset.value;
+          list.classList.remove('open');
+        });
+      });
+    }
+
+    function initDropdown(inputId, listId) {
+      const input = document.getElementById(inputId);
+      const list  = document.getElementById(listId);
+      if (!input || !list) return;
+
+      input.addEventListener('focus', () => {
+        renderOptions(input, list, input.value);
+        list.classList.add('open');
+      });
+
+      input.addEventListener('input', () => {
+        renderOptions(input, list, input.value);
+        list.classList.add('open');
+      });
+
+      input.addEventListener('blur', () => {
+        setTimeout(() => list.classList.remove('open'), 150);
+      });
+
+      // Arrow key + Enter navigation
+      input.addEventListener('keydown', (e) => {
+        const opts = [...list.querySelectorAll('.cat-option:not(.no-results)')];
+        const hi   = list.querySelector('.highlighted');
+        let idx    = opts.indexOf(hi);
+
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          if (hi) hi.classList.remove('highlighted');
+          idx = (idx + 1) % opts.length;
+          opts[idx]?.classList.add('highlighted');
+          opts[idx]?.scrollIntoView({ block: 'nearest' });
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (hi) hi.classList.remove('highlighted');
+          idx = (idx - 1 + opts.length) % opts.length;
+          opts[idx]?.classList.add('highlighted');
+          opts[idx]?.scrollIntoView({ block: 'nearest' });
+        } else if (e.key === 'Enter') {
+          if (hi) {
+            e.preventDefault();
+            input.value = hi.dataset.value;
+            list.classList.remove('open');
+          }
+        } else if (e.key === 'Escape') {
+          list.classList.remove('open');
+        }
+      });
+    }
+
+    // Initialise all dropdowns
+    dropdownRegistry.forEach(({ inputId, listId }) => initDropdown(inputId, listId));
+
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', (e) => {
+      dropdownRegistry.forEach(({ inputId, listId }) => {
+        const input = document.getElementById(inputId);
+        const list  = document.getElementById(listId);
+        if (input && list && !input.contains(e.target) && !list.contains(e.target)) {
+          list.classList.remove('open');
+        }
+      });
+    });
+
+    /* ══════════════════════════════════════════════
+       DATA FILTERS
+       ══════════════════════════════════════════════ */
+
+    // ── Shared table renderer helpers ──────────────────────────
+
+    function renderTransactionRows(items) {
+      if (!items.length) {
+        transactionsTableBody.innerHTML = '<tr><td colspan="7" class="sub">No transactions match the current filter.</td></tr>';
+        return;
+      }
+      transactionsTableBody.innerHTML = items.map(item => `
+        <tr>
+          <td>${item.id}</td>
+          <td>${item.date}</td>
+          <td style="text-transform:capitalize;">
+            <span class="pill ${item.type === 'income' ? 'good' : 'fair'}">${item.type}</span>
+          </td>
+          <td>${item.category}</td>
+          <td>${currency(item.amount)}</td>
+          <td class="sub">${item.description || '—'}</td>
+          <td>
+            <div class="actions">
+              <button type="button" onclick="window.editTransaction(${item.id})">Edit</button>
+              <button type="button" class="danger-btn" onclick="window.deleteTransaction(${item.id})">Delete</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function renderBudgetRows(items) {
+      if (!items.length) {
+        budgetsTableBody.innerHTML = '<tr><td colspan="6" class="sub">No budgets match the current filter.</td></tr>';
+        return;
+      }
+      budgetsTableBody.innerHTML = items.map(item => `
+        <tr>
+          <td>${item.id}</td>
+          <td>${item.category}</td>
+          <td>${item.month}</td>
+          <td>${item.year}</td>
+          <td>${currency(item.amount)}</td>
+          <td>
+            <div class="actions">
+              <button type="button" onclick="window.editBudget(${item.id})">Edit</button>
+              <button type="button" class="danger-btn" onclick="window.deleteBudget(${item.id})">Delete</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function renderAssetRows(items) {
+      if (!items.length) {
+        assetsTableBody.innerHTML = '<tr><td colspan="6" class="sub">No assets match the current filter.</td></tr>';
+        return;
+      }
+      assetsTableBody.innerHTML = items.map(item => `
+        <tr>
+          <td>${item.id}</td>
+          <td>${item.name}</td>
+          <td>${item.type}</td>
+          <td>${currency(item.value)}</td>
+          <td>${item.date}</td>
+          <td>
+            <div class="actions">
+              <button type="button" onclick="window.editAsset(${item.id})">Edit</button>
+              <button type="button" class="danger-btn" onclick="window.deleteAsset(${item.id})">Delete</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function renderLiabilityRows(items) {
+      if (!items.length) {
+        liabilitiesTableBody.innerHTML = '<tr><td colspan="6" class="sub">No liabilities match the current filter.</td></tr>';
+        return;
+      }
+      liabilitiesTableBody.innerHTML = items.map(item => `
+        <tr>
+          <td>${item.id}</td>
+          <td>${item.name}</td>
+          <td>${item.type}</td>
+          <td>${currency(item.amount)}</td>
+          <td>${item.date}</td>
+          <td>
+            <div class="actions">
+              <button type="button" onclick="window.editLiability(${item.id})">Edit</button>
+              <button type="button" class="danger-btn" onclick="window.deleteLiability(${item.id})">Delete</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // ── Transaction Filter ──────────────────────────────────────
+
+    function applyTransactionFilter() {
+      const all    = window.transactionCache || [];
+      const month  = document.getElementById('txFilterMonth').value.trim();
+      const year   = document.getElementById('txFilterYear').value.trim();
+      const type   = document.getElementById('txFilterType').value;
+      const cat    = document.getElementById('txFilterCategory').value.trim().toLowerCase();
+
+      const filtered = all.filter(item => {
+        if (!item.date) return false;
+        const [y, m] = item.date.split('-');
+        if (month && String(parseInt(m)) !== String(parseInt(month))) return false;
+        if (year  && y !== year) return false;
+        if (type  && item.type !== type) return false;
+        if (cat   && !(item.category || '').toLowerCase().includes(cat)) return false;
+        return true;
+      });
+
+      renderTransactionRows(filtered);
+
+      const parts = [];
+      if (month) parts.push(`Month <strong>${month}</strong>`);
+      if (year)  parts.push(`Year <strong>${year}</strong>`);
+      if (type)  parts.push(`Type <strong>${type}</strong>`);
+      if (cat)   parts.push(`Category contains <strong>"${cat}"</strong>`);
+
+      const summary = document.getElementById('txFilterSummary');
+      summary.innerHTML = parts.length
+        ? `Showing <strong>${filtered.length}</strong> of ${all.length} transactions · ${parts.join(' · ')}`
+        : '';
+    }
+
+    function clearTransactionFilter() {
+      document.getElementById('txFilterMonth').value    = '';
+      document.getElementById('txFilterYear').value     = '';
+      document.getElementById('txFilterType').value     = '';
+      document.getElementById('txFilterCategory').value = '';
+      document.getElementById('txFilterSummary').innerHTML = '';
+      renderTransactionRows(window.transactionCache || []);
+    }
+
+    // ── Budget Filter ───────────────────────────────────────────
+
+    function applyBudgetFilter() {
+      const all   = window.budgetCache || [];
+      const month = document.getElementById('bdgFilterMonth').value.trim();
+      const year  = document.getElementById('bdgFilterYear').value.trim();
+      const cat   = document.getElementById('bdgFilterCategory').value.trim().toLowerCase();
+
+      const filtered = all.filter(item => {
+        if (month && String(item.month) !== String(parseInt(month))) return false;
+        if (year  && String(item.year)  !== year) return false;
+        if (cat   && !(item.category || '').toLowerCase().includes(cat)) return false;
+        return true;
+      });
+
+      renderBudgetRows(filtered);
+
+      const parts = [];
+      if (month) parts.push(`Month <strong>${month}</strong>`);
+      if (year)  parts.push(`Year <strong>${year}</strong>`);
+      if (cat)   parts.push(`Category contains <strong>"${cat}"</strong>`);
+
+      const summary = document.getElementById('bdgFilterSummary');
+      summary.innerHTML = parts.length
+        ? `Showing <strong>${filtered.length}</strong> of ${all.length} budgets · ${parts.join(' · ')}`
+        : '';
+    }
+
+    function clearBudgetFilter() {
+      document.getElementById('bdgFilterMonth').value    = '';
+      document.getElementById('bdgFilterYear').value     = '';
+      document.getElementById('bdgFilterCategory').value = '';
+      document.getElementById('bdgFilterSummary').innerHTML = '';
+      renderBudgetRows(window.budgetCache || []);
+    }
+
+    // ── Asset Filter ────────────────────────────────────────────
+
+    function applyAssetFilter() {
+      const all  = window.assetCache || [];
+      const from = document.getElementById('astFilterFrom').value;
+      const to   = document.getElementById('astFilterTo').value;
+      const type = document.getElementById('astFilterType').value.trim().toLowerCase();
+
+      const filtered = all.filter(item => {
+        if (!item.date) return false;
+        if (from && item.date < from) return false;
+        if (to   && item.date > to)   return false;
+        if (type && !(item.type || '').toLowerCase().includes(type)) return false;
+        return true;
+      });
+
+      renderAssetRows(filtered);
+
+      const totalVal = filtered.reduce((s, a) => s + Number(a.value || 0), 0);
+      const parts = [];
+      if (from) parts.push(`From <strong>${from}</strong>`);
+      if (to)   parts.push(`To <strong>${to}</strong>`);
+      if (type) parts.push(`Type contains <strong>"${type}"</strong>`);
+
+      const summary = document.getElementById('astFilterSummary');
+      summary.innerHTML = parts.length
+        ? `Showing <strong>${filtered.length}</strong> of ${all.length} assets · Total value: <strong>${currency(totalVal)}</strong> · ${parts.join(' · ')}`
+        : '';
+    }
+
+    function clearAssetFilter() {
+      document.getElementById('astFilterFrom').value = '';
+      document.getElementById('astFilterTo').value   = '';
+      document.getElementById('astFilterType').value = '';
+      document.getElementById('astFilterSummary').innerHTML = '';
+      renderAssetRows(window.assetCache || []);
+    }
+
+    // ── Liability Filter ────────────────────────────────────────
+
+    function applyLiabilityFilter() {
+      const all  = window.liabilityCache || [];
+      const from = document.getElementById('libFilterFrom').value;
+      const to   = document.getElementById('libFilterTo').value;
+      const type = document.getElementById('libFilterType').value.trim().toLowerCase();
+
+      const filtered = all.filter(item => {
+        if (!item.date) return false;
+        if (from && item.date < from) return false;
+        if (to   && item.date > to)   return false;
+        if (type && !(item.type || '').toLowerCase().includes(type)) return false;
+        return true;
+      });
+
+      renderLiabilityRows(filtered);
+
+      const totalAmt = filtered.reduce((s, l) => s + Number(l.amount || 0), 0);
+      const parts = [];
+      if (from) parts.push(`From <strong>${from}</strong>`);
+      if (to)   parts.push(`To <strong>${to}</strong>`);
+      if (type) parts.push(`Type contains <strong>"${type}"</strong>`);
+
+      const summary = document.getElementById('libFilterSummary');
+      summary.innerHTML = parts.length
+        ? `Showing <strong>${filtered.length}</strong> of ${all.length} liabilities · Total: <strong>${currency(totalAmt)}</strong> · ${parts.join(' · ')}`
+        : '';
+    }
+
+    function clearLiabilityFilter() {
+      document.getElementById('libFilterFrom').value = '';
+      document.getElementById('libFilterTo').value   = '';
+      document.getElementById('libFilterType').value = '';
+      document.getElementById('libFilterSummary').innerHTML = '';
+      renderLiabilityRows(window.liabilityCache || []);
+    }
+
+    /* ══════════════════════════════════════════════
+       SECTION ROUTING
+       ══════════════════════════════════════════════ */
+
+    const sectionMeta = {
+      dashboard:     { title: 'Dashboard',    sub: '' },
+      charts:        { title: 'Charts',        sub: 'Visual analytics' },
+      transactions:  { title: 'Transactions',  sub: 'Income & expenses' },
+      budgets:       { title: 'Budgets',        sub: 'Monthly budget plans' },
+      goals:         { title: 'Goals',          sub: 'Savings goals' },
+      categories:    { title: 'Categories',     sub: 'Manage categories' },
+      assets:        { title: 'Assets',         sub: 'Net worth — assets' },
+      liabilities:   { title: 'Liabilities',    sub: 'Net worth — liabilities' },
+      users:         { title: 'Users',          sub: 'User management (Admin only)' }
+    };
+
+    function showSection(sectionId) {
+      const sections = ['dashboard', 'transactions', 'budgets', 'goals', 'assets', 'liabilities', 'categories', 'charts', 'users'];
+      sections.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
+
+      const selected = document.getElementById(sectionId);
+      if (selected) selected.style.display = 'block';
+
+      // Update header title
+      const meta = sectionMeta[sectionId] || {};
+      const headerTitle = document.getElementById('headerTitle');
+      if (headerTitle) headerTitle.textContent = meta.title || sectionId;
+
+      // Update active nav item
+      document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+      const activeNav = document.getElementById('nav-' + sectionId);
+      if (activeNav) activeNav.classList.add('active');
+
+      // Charts lazy-init
+      if (sectionId === 'charts') initChartsSection();
+
+      // Close sidebar on mobile
+      closeSidebar();
+    }
+
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('open');
+      document.getElementById('sidebarOverlay').classList.toggle('open');
+    }
+
+    function closeSidebar() {
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('sidebarOverlay').classList.remove('open');
+    }
+
+    showSection('dashboard');
+
+    loadCurrentUser();
+    loadDashboard();
+
+    Promise.all([
+      loadTransactions(),
+      loadAssets(),
+      loadLiabilities()
+    ]).then(() => renderDashboardCharts());
+
+    loadBudgets();
+    loadGoals();
+    loadCategories();
+
+    /* ══════════════════════════════════════════════
+       CHARTS ENGINE
+       ══════════════════════════════════════════════ */
+
+    // Chart.js global defaults
+    const CHART_COLORS = [
+      '#38bdf8','#22c55e','#f59e0b','#ef4444','#a855f7',
+      '#ec4899','#14b8a6','#f97316','#6366f1','#84cc16'
+    ];
+
+    Chart.defaults.color = '#5a7a99';
+    Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+    Chart.defaults.font.family = "'DM Sans', system-ui, sans-serif";
+
+    const chartInstances = {};
+
+    function destroyChart(id) {
+      if (chartInstances[id]) {
+        chartInstances[id].destroy();
+        delete chartInstances[id];
+      }
+    }
+
+    function showEmpty(emptyId, canvasId, show) {
+      const empty = document.getElementById(emptyId);
+      const canvas = document.getElementById(canvasId);
+      if (empty) empty.style.display = show ? 'flex' : 'none';
+      if (canvas) canvas.style.display = show ? 'none' : 'block';
+    }
+
+    function filterByDateRange(items, dateField, from, to) {
+      return items.filter(item => {
+        const d = item[dateField];
+        if (!d) return false;
+        if (from && d < from) return false;
+        if (to   && d > to)   return false;
+        return true;
+      });
+    }
+
+    function parseCatFilter(inputId) {
+      const val = document.getElementById(inputId).value.trim();
+      if (!val) return [];
+      return val.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+    }
+
+    function getDateRange(fromId, toId) {
+      return {
+        from: document.getElementById(fromId).value || '',
+        to:   document.getElementById(toId).value   || ''
+      };
+    }
+
+    // ── Helper: group transactions → { label: { category: total } }
+    function groupExpenses(items, groupFn) {
+      const map = {};
+      items.forEach(item => {
+        if (item.type !== 'expense') return;
+        const label = groupFn(item.date);
+        const cat   = item.category || 'Other';
+        if (!map[label]) map[label] = {};
+        map[label][cat] = (map[label][cat] || 0) + Number(item.amount || 0);
+      });
+      return map;
+    }
+
+    // ── Helper: group transactions → { label: net savings }
+    function groupSavings(items, groupFn) {
+      const map = {};
+      items.forEach(item => {
+        const label = groupFn(item.date);
+        const amt   = Number(item.amount || 0);
+        if (!map[label]) map[label] = 0;
+        map[label] += item.type === 'income' ? amt : -amt;
+      });
+      return map;
+    }
+
+    function monthLabel(dateStr) {
+      if (!dateStr) return '?';
+      const [y, m] = dateStr.split('-');
+      return `${y}-${m}`;
+    }
+
+    function yearLabel(dateStr) {
+      if (!dateStr) return '?';
+      return dateStr.split('-')[0];
+    }
+
+    // Sorted unique keys
+    function sortedKeys(obj) {
+      return Object.keys(obj).sort();
+    }
+
+    // ── 1. Monthly Expenses by Category ──────────────────────────
+    function renderMonthlyExpenseChart() {
+      destroyChart('monthlyExp');
+      const { from, to } = getDateRange('mExpFrom', 'mExpTo');
+      const catFilter = parseCatFilter('mExpCats');
+      const allTx = window.transactionCache || [];
+      let items = filterByDateRange(allTx, 'date', from, to);
+
+      const grouped = groupExpenses(items, monthLabel);
+      const labels  = sortedKeys(grouped);
+
+      // Collect all categories
+      let allCats = [...new Set(labels.flatMap(l => Object.keys(grouped[l])))].sort();
+      if (catFilter.length) allCats = allCats.filter(c => catFilter.includes(c.toLowerCase()));
+
+      if (!labels.length || !allCats.length) {
+        showEmpty('chartMonthlyExpEmpty', 'chartMonthlyExp', true);
+        return;
+      }
+      showEmpty('chartMonthlyExpEmpty', 'chartMonthlyExp', false);
+
+      const datasets = allCats.map((cat, i) => ({
+        label: cat,
+        data: labels.map(l => grouped[l][cat] || 0),
+        backgroundColor: CHART_COLORS[i % CHART_COLORS.length],
+        borderRadius: 4,
+        borderSkipped: false
+      }));
+
+      const ctx = document.getElementById('chartMonthlyExp').getContext('2d');
+      chartInstances['monthlyExp'] = new Chart(ctx, {
+        type: 'bar',
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { position: 'top' },
+            tooltip: {
+              callbacks: {
+                label: ctx => ` ${ctx.dataset.label}: £${ctx.parsed.y.toLocaleString()}`
+              }
+            }
+          },
+          scales: {
+            x: { stacked: true, grid: { color: 'rgba(51,65,85,0.3)' } },
+            y: { stacked: true, grid: { color: 'rgba(51,65,85,0.3)' },
+              ticks: { callback: v => '£' + v.toLocaleString() } }
+          }
+        }
+      });
+    }
+
+    // ── 2. Yearly Expenses by Category ───────────────────────────
+    function renderYearlyExpenseChart() {
+      destroyChart('yearlyExp');
+      const { from, to } = getDateRange('yExpFrom', 'yExpTo');
+      const catFilter = parseCatFilter('yExpCats');
+      const allTx = window.transactionCache || [];
+      let items = filterByDateRange(allTx, 'date', from, to);
+
+      const grouped = groupExpenses(items, yearLabel);
+      const labels  = sortedKeys(grouped);
+      let allCats = [...new Set(labels.flatMap(l => Object.keys(grouped[l])))].sort();
+      if (catFilter.length) allCats = allCats.filter(c => catFilter.includes(c.toLowerCase()));
+
+      if (!labels.length || !allCats.length) {
+        showEmpty('chartYearlyExpEmpty', 'chartYearlyExp', true);
+        return;
+      }
+      showEmpty('chartYearlyExpEmpty', 'chartYearlyExp', false);
+
+      const datasets = allCats.map((cat, i) => ({
+        label: cat,
+        data: labels.map(l => grouped[l][cat] || 0),
+        backgroundColor: CHART_COLORS[i % CHART_COLORS.length],
+        borderRadius: 4,
+        borderSkipped: false
+      }));
+
+      const ctx = document.getElementById('chartYearlyExp').getContext('2d');
+      chartInstances['yearlyExp'] = new Chart(ctx, {
+        type: 'bar',
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { position: 'top' },
+            tooltip: {
+              callbacks: {
+                label: ctx => ` ${ctx.dataset.label}: £${ctx.parsed.y.toLocaleString()}`
+              }
+            }
+          },
+          scales: {
+            x: { stacked: true, grid: { color: 'rgba(51,65,85,0.3)' } },
+            y: { stacked: true, grid: { color: 'rgba(51,65,85,0.3)' },
+              ticks: { callback: v => '£' + v.toLocaleString() } }
+          }
+        }
+      });
+    }
+
+    // ── 3. Monthly Savings ────────────────────────────────────────
+    function renderMonthlySavingsChart() {
+      destroyChart('monthlySav');
+      const { from, to } = getDateRange('mSavFrom', 'mSavTo');
+      const allTx = window.transactionCache || [];
+      const items = filterByDateRange(allTx, 'date', from, to);
+      const grouped = groupSavings(items, monthLabel);
+      const labels  = sortedKeys(grouped);
+
+      if (!labels.length) {
+        showEmpty('chartMonthlySavEmpty', 'chartMonthlySav', true);
+        return;
+      }
+      showEmpty('chartMonthlySavEmpty', 'chartMonthlySav', false);
+
+      const data = labels.map(l => grouped[l]);
+      const ctx = document.getElementById('chartMonthlySav').getContext('2d');
+      chartInstances['monthlySav'] = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Monthly Savings',
+            data,
+            borderColor: '#22c55e',
+            backgroundColor: 'rgba(34,197,94,0.12)',
+            pointBackgroundColor: data.map(v => v >= 0 ? '#22c55e' : '#ef4444'),
+            pointRadius: 5,
+            fill: true,
+            tension: 0.35
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => ` Savings: £${ctx.parsed.y.toLocaleString()}`
+              }
+            }
+          },
+          scales: {
+            x: { grid: { color: 'rgba(51,65,85,0.3)' } },
+            y: { grid: { color: 'rgba(51,65,85,0.3)' },
+              ticks: { callback: v => '£' + v.toLocaleString() } }
+          }
+        }
+      });
+    }
+
+    // ── 4. Yearly Savings ─────────────────────────────────────────
+    function renderYearlySavingsChart() {
+      destroyChart('yearlySav');
+      const { from, to } = getDateRange('ySavFrom', 'ySavTo');
+      const allTx = window.transactionCache || [];
+      const items = filterByDateRange(allTx, 'date', from, to);
+      const grouped = groupSavings(items, yearLabel);
+      const labels  = sortedKeys(grouped);
+
+      if (!labels.length) {
+        showEmpty('chartYearlySavEmpty', 'chartYearlySav', true);
+        return;
+      }
+      showEmpty('chartYearlySavEmpty', 'chartYearlySav', false);
+
+      const data = labels.map(l => grouped[l]);
+      const ctx = document.getElementById('chartYearlySav').getContext('2d');
+      chartInstances['yearlySav'] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Yearly Savings',
+            data,
+            backgroundColor: data.map(v => v >= 0 ? 'rgba(34,197,94,0.7)' : 'rgba(239,68,68,0.7)'),
+            borderColor:      data.map(v => v >= 0 ? '#22c55e' : '#ef4444'),
+            borderWidth: 1,
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => ` Savings: £${ctx.parsed.y.toLocaleString()}`
+              }
+            }
+          },
+          scales: {
+            x: { grid: { color: 'rgba(51,65,85,0.3)' } },
+            y: { grid: { color: 'rgba(51,65,85,0.3)' },
+              ticks: { callback: v => '£' + v.toLocaleString() } }
+          }
+        }
+      });
+    }
+
+    // ── 5. Net Worth Tracking ─────────────────────────────────────
+    function renderNetworthChart() {
+      destroyChart('networth');
+      const { from, to } = getDateRange('nwFrom', 'nwTo');
+
+      const allAssets      = window.assetCache      || [];
+      const allLiabilities = window.liabilityCache  || [];
+
+      const filtAssets = filterByDateRange(allAssets,      'date', from, to);
+      const filtLibs   = filterByDateRange(allLiabilities, 'date', from, to);
+
+      // Aggregate by date snapshot
+      const assetByDate = {};
+      filtAssets.forEach(a => {
+        assetByDate[a.date] = (assetByDate[a.date] || 0) + Number(a.value || 0);
+      });
+      const libByDate = {};
+      filtLibs.forEach(l => {
+        libByDate[l.date] = (libByDate[l.date] || 0) + Number(l.amount || 0);
+      });
+
+      const allDates = [...new Set([...Object.keys(assetByDate), ...Object.keys(libByDate)])].sort();
+
+      if (!allDates.length) {
+        showEmpty('chartNetworthEmpty', 'chartNetworth', true);
+        return;
+      }
+      showEmpty('chartNetworthEmpty', 'chartNetworth', false);
+
+      const assetsData      = allDates.map(d => assetByDate[d]      || 0);
+      const liabilitiesData = allDates.map(d => libByDate[d]        || 0);
+      const networthData    = allDates.map(d => (assetByDate[d] || 0) - (libByDate[d] || 0));
+
+      const ctx = document.getElementById('chartNetworth').getContext('2d');
+      chartInstances['networth'] = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: allDates,
+          datasets: [
+            {
+              label: 'Net Worth',
+              data: networthData,
+              borderColor: '#38bdf8',
+              backgroundColor: 'rgba(56,189,248,0.1)',
+              fill: true,
+              tension: 0.35,
+              pointRadius: 5,
+              pointBackgroundColor: '#38bdf8',
+              borderWidth: 2
+            },
+            {
+              label: 'Total Assets',
+              data: assetsData,
+              borderColor: '#22c55e',
+              backgroundColor: 'transparent',
+              tension: 0.35,
+              pointRadius: 4,
+              borderDash: [4, 3],
+              borderWidth: 1.5
+            },
+            {
+              label: 'Total Liabilities',
+              data: liabilitiesData,
+              borderColor: '#ef4444',
+              backgroundColor: 'transparent',
+              tension: 0.35,
+              pointRadius: 4,
+              borderDash: [4, 3],
+              borderWidth: 1.5
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { position: 'top' },
+            tooltip: {
+              callbacks: {
+                label: ctx => ` ${ctx.dataset.label}: £${ctx.parsed.y.toLocaleString()}`
+              }
+            }
+          },
+          scales: {
+            x: { grid: { color: 'rgba(51,65,85,0.3)' } },
+            y: { grid: { color: 'rgba(51,65,85,0.3)' },
+              ticks: { callback: v => '£' + v.toLocaleString() } }
+          }
+        }
+      });
+    }
+
+    // ── Auto-render all charts when section is first opened ───────
+    let chartsInitialised = false;
+    function initChartsSection() {
+      if (chartsInitialised) return;
+      chartsInitialised = true;
+      renderMonthlyExpenseChart();
+      renderYearlyExpenseChart();
+      renderMonthlySavingsChart();
+      renderYearlySavingsChart();
+      renderNetworthChart();
+    }
+
+    // ── Dashboard inline charts (no filter controls) ──────────────
+    function renderDashboardCharts() {
+      // Chart 1 — Monthly Expenses by Category (all time, all cats)
+      destroyChart('monthlyExpDash');
+      const allTx = window.transactionCache || [];
+      const grouped1 = groupExpenses(allTx, monthLabel);
+      const labels1  = sortedKeys(grouped1);
+      const allCats1 = [...new Set(labels1.flatMap(l => Object.keys(grouped1[l])))].sort();
+
+      if (labels1.length && allCats1.length) {
+        showEmpty('chartMonthlyExpDashEmpty', 'chartMonthlyExpDash', false);
+        const datasets1 = allCats1.map((cat, i) => ({
+          label: cat,
+          data: labels1.map(l => grouped1[l][cat] || 0),
+          backgroundColor: CHART_COLORS[i % CHART_COLORS.length],
+          borderRadius: 4,
+          borderSkipped: false
+        }));
+        const ctx1 = document.getElementById('chartMonthlyExpDash').getContext('2d');
+        chartInstances['monthlyExpDash'] = new Chart(ctx1, {
+          type: 'bar',
+          data: { labels: labels1, datasets: datasets1 },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+              legend: { position: 'top' },
+              tooltip: { callbacks: { label: c => ` ${c.dataset.label}: £${c.parsed.y.toLocaleString()}` } }
+            },
+            scales: {
+              x: { stacked: true, grid: { color: 'rgba(51,65,85,0.3)' } },
+              y: { stacked: true, grid: { color: 'rgba(51,65,85,0.3)' },
+                ticks: { callback: v => '£' + v.toLocaleString() } }
+            }
+          }
+        });
+      } else {
+        showEmpty('chartMonthlyExpDashEmpty', 'chartMonthlyExpDash', true);
+      }
+
+      // Chart 4 — Yearly Savings
+      destroyChart('yearlySavDash');
+      const grouped4 = groupSavings(allTx, yearLabel);
+      const labels4  = sortedKeys(grouped4);
+      if (labels4.length) {
+        showEmpty('chartYearlySavDashEmpty', 'chartYearlySavDash', false);
+        const data4 = labels4.map(l => grouped4[l]);
+        const ctx4 = document.getElementById('chartYearlySavDash').getContext('2d');
+        chartInstances['yearlySavDash'] = new Chart(ctx4, {
+          type: 'bar',
+          data: {
+            labels: labels4,
+            datasets: [{
+              label: 'Yearly Savings',
+              data: data4,
+              backgroundColor: data4.map(v => v >= 0 ? 'rgba(34,197,94,0.7)' : 'rgba(239,68,68,0.7)'),
+              borderColor:      data4.map(v => v >= 0 ? '#22c55e' : '#ef4444'),
+              borderWidth: 1, borderRadius: 6
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+              legend: { display: false },
+              tooltip: { callbacks: { label: c => ` Savings: £${c.parsed.y.toLocaleString()}` } }
+            },
+            scales: {
+              x: { grid: { color: 'rgba(51,65,85,0.3)' } },
+              y: { grid: { color: 'rgba(51,65,85,0.3)' },
+                ticks: { callback: v => '£' + v.toLocaleString() } }
+            }
+          }
+        });
+      } else {
+        showEmpty('chartYearlySavDashEmpty', 'chartYearlySavDash', true);
+      }
+
+      // Chart 5 — Net Worth Tracking
+      destroyChart('networthDash');
+      const allAssets = window.assetCache || [];
+      const allLibs   = window.liabilityCache || [];
+      const assetByDate = {};
+      allAssets.forEach(a => { assetByDate[a.date] = (assetByDate[a.date] || 0) + Number(a.value || 0); });
+      const libByDate = {};
+      allLibs.forEach(l => { libByDate[l.date] = (libByDate[l.date] || 0) + Number(l.amount || 0); });
+      const allDates5 = [...new Set([...Object.keys(assetByDate), ...Object.keys(libByDate)])].sort();
+
+      if (allDates5.length) {
+        showEmpty('chartNetworthDashEmpty', 'chartNetworthDash', false);
+        const assetsData5 = allDates5.map(d => assetByDate[d] || 0);
+        const libsData5   = allDates5.map(d => libByDate[d]   || 0);
+        const nwData5     = allDates5.map(d => (assetByDate[d] || 0) - (libByDate[d] || 0));
+        const ctx5 = document.getElementById('chartNetworthDash').getContext('2d');
+        chartInstances['networthDash'] = new Chart(ctx5, {
+          type: 'line',
+          data: {
+            labels: allDates5,
+            datasets: [
+              { label: 'Net Worth',        data: nwData5,     borderColor: '#38bdf8', backgroundColor: 'rgba(56,189,248,0.1)', fill: true, tension: 0.35, pointRadius: 4, borderWidth: 2 },
+              { label: 'Total Assets',     data: assetsData5, borderColor: '#22c55e', backgroundColor: 'transparent', tension: 0.35, pointRadius: 3, borderDash: [4,3], borderWidth: 1.5 },
+              { label: 'Total Liabilities',data: libsData5,   borderColor: '#ef4444', backgroundColor: 'transparent', tension: 0.35, pointRadius: 3, borderDash: [4,3], borderWidth: 1.5 }
+            ]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+              legend: { position: 'top' },
+              tooltip: { callbacks: { label: c => ` ${c.dataset.label}: £${c.parsed.y.toLocaleString()}` } }
+            },
+            scales: {
+              x: { grid: { color: 'rgba(51,65,85,0.3)' } },
+              y: { grid: { color: 'rgba(51,65,85,0.3)' },
+                ticks: { callback: v => '£' + v.toLocaleString() } }
+            }
+          }
+        });
+      } else {
+        showEmpty('chartNetworthDashEmpty', 'chartNetworthDash', true);
+      }
+    }
+  </script>
+</body>
+</html>

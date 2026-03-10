@@ -1,0 +1,14 @@
+﻿venv/
+.venv/
+Lib/
+Scripts/
+pyvenv.cfg
+__pycache__/
+*.pyc
+*.pyo
+*.db
+*.sqlite3
+.env
+.idea/
+.DS_Store
+Thumbs.db
