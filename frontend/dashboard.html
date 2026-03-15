@@ -754,7 +754,7 @@
         </div>
       </div>
       <div class="header-right">
-        <input id="apiUrl" type="text" class="api-input" value="https://finance-app-t1am.onrender.com/dashboard/overview" />
+        <input id="apiUrl" type="text" class="api-input" value="http://127.0.0.1:8000/dashboard/overview" />
         <button class="header-btn" id="refreshBtn">⟳ Refresh</button>
         <button class="header-btn" onclick="logout()" style="background:#ef4444;">Logout</button>
       </div>
@@ -2957,6 +2957,9 @@
 
       // Charts lazy-init
       if (sectionId === 'charts') initChartsSection();
+
+      // Users lazy-load
+      if (sectionId === 'users') loadUsers();
 
       // Close sidebar on mobile
       closeSidebar();
