@@ -1,113 +1,307 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Personal Finance</title>
+  <meta charset="UTF-8" />
+  <title>Personal Finance — Sign In</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#0a0f1e" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Personal Finance" />
+  <link rel="apple-touch-icon" href="/icon-192.png" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
 
-<style>
-body{
-font-family:Arial;
-background:#f4f6f8;
-display:flex;
-justify-content:center;
-align-items:center;
-height:100vh;
-}
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-.login-box{
-background:white;
-padding:40px;
-border-radius:10px;
-width:320px;
-box-shadow:0 0 10px rgba(0,0,0,0.1);
-}
+    :root {
+      --bg:      #060b16;
+      --border:  rgba(255,255,255,0.07);
+      --accent:  #3b9eff;
+      --accent2: #00d4aa;
+      --text:    #e8f0fe;
+      --muted:   #4a6580;
+      --danger:  #ff4d6d;
+    }
 
-input{
-width:100%;
-padding:10px;
-margin-top:10px;
-margin-bottom:15px;
-}
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Instrument Sans', sans-serif; overflow-x: hidden; }
 
-button{
-width:100%;
-padding:10px;
-background:#2c7be5;
-color:white;
-border:none;
-cursor:pointer;
-}
+    .bg-canvas { position: fixed; inset: 0; z-index: 0; overflow: hidden; }
 
-.error{
-color:red;
-margin-top:10px;
-}
-</style>
-<link rel="manifest" href="/manifest.json" />
-<meta name="theme-color" content="#3b9eff" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="Personal Finance" />
-<link rel="apple-touch-icon" href="/icon-192.png" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    .orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.18; animation: drift 12s ease-in-out infinite alternate; }
+    .orb-1 { width: 500px; height: 500px; background: #3b9eff; top: -150px; left: -100px; animation-delay: 0s; }
+    .orb-2 { width: 400px; height: 400px; background: #00d4aa; bottom: -100px; right: -80px; animation-delay: -4s; }
+    .orb-3 { width: 300px; height: 300px; background: #7c3aed; top: 40%; left: 50%; transform: translate(-50%,-50%); animation-delay: -8s; }
+
+    @keyframes drift {
+      from { transform: translate(0,0) scale(1); }
+      to   { transform: translate(30px,20px) scale(1.08); }
+    }
+
+    .bg-grid {
+      position: fixed; inset: 0; z-index: 0;
+      background-image: linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+
+    .page {
+      position: relative; z-index: 1; min-height: 100vh;
+      display: grid; grid-template-columns: 1fr 1fr; align-items: stretch;
+    }
+
+    /* LEFT PANEL */
+    .left-panel {
+      display: flex; flex-direction: column; justify-content: space-between;
+      padding: 48px; border-right: 1px solid var(--border);
+      animation: fadeUp 0.8s ease both;
+    }
+
+    .brand { display: flex; align-items: center; gap: 14px; }
+    .brand-icon {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, #3b9eff, #00d4aa);
+      border-radius: 12px; display: flex; align-items: center; justify-content: center;
+      font-size: 22px; box-shadow: 0 0 24px rgba(59,158,255,0.4);
+    }
+    .brand-name { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; color: var(--text); }
+
+    .hero { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 40px 0; }
+
+    .hero-tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(59,158,255,0.1); border: 1px solid rgba(59,158,255,0.2);
+      border-radius: 100px; padding: 5px 14px; font-size: 12px; font-weight: 600;
+      color: var(--accent); letter-spacing: 0.5px; text-transform: uppercase;
+      margin-bottom: 24px; width: fit-content;
+    }
+
+    .hero h1 {
+      font-family: 'Syne', sans-serif; font-size: clamp(32px,4vw,52px);
+      font-weight: 800; line-height: 1.1; letter-spacing: -1.5px;
+      color: var(--text); margin-bottom: 20px;
+    }
+    .hero h1 span {
+      background: linear-gradient(135deg, #3b9eff, #00d4aa);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+
+    .hero p { font-size: 16px; color: var(--muted); line-height: 1.7; max-width: 380px; margin-bottom: 36px; }
+
+    .feature-list { display: flex; flex-direction: column; gap: 14px; }
+    .feature-item { display: flex; align-items: center; gap: 12px; font-size: 14px; color: #7a9ab8; }
+    .feature-dot { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+    .fd-blue   { background: rgba(59,158,255,0.12); }
+    .fd-green  { background: rgba(0,212,170,0.12); }
+    .fd-purple { background: rgba(124,58,237,0.12); }
+
+    .left-footer { font-size: 12px; color: var(--muted); opacity: 0.5; }
+
+    /* RIGHT PANEL */
+    .right-panel {
+      display: flex; align-items: center; justify-content: center;
+      padding: 48px 40px; animation: fadeUp 0.8s ease 0.15s both;
+    }
+
+    .login-box { width: 100%; max-width: 380px; }
+
+    .login-box h2 {
+      font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 700;
+      letter-spacing: -0.6px; color: var(--text); margin-bottom: 6px;
+    }
+    .tagline { font-size: 14px; color: var(--muted); margin-bottom: 36px; }
+
+    .field-group { margin-bottom: 18px; }
+    .field-label { display: block; font-size: 12px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+    .field-wrap { position: relative; }
+    .field-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 16px; opacity: 0.4; pointer-events: none; }
+
+    input {
+      width: 100%; padding: 14px 14px 14px 42px;
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      border-radius: 12px; color: var(--text); font-size: 15px; font-family: inherit;
+      outline: none; transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+    }
+    input:focus { border-color: var(--accent); background: rgba(59,158,255,0.05); box-shadow: 0 0 0 3px rgba(59,158,255,0.1); }
+    input::placeholder { color: rgba(255,255,255,0.15); }
+
+    .login-btn {
+      width: 100%; padding: 15px;
+      background: linear-gradient(135deg, #3b9eff, #0ea5e9);
+      color: white; border: none; border-radius: 12px;
+      font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer;
+      margin-top: 8px; position: relative; overflow: hidden;
+      transition: transform 0.15s, box-shadow 0.2s, opacity 0.2s;
+      box-shadow: 0 4px 20px rgba(59,158,255,0.35); letter-spacing: 0.2px;
+    }
+    .login-btn::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent); opacity: 0; transition: opacity 0.2s; }
+    .login-btn:hover::before { opacity: 1; }
+    .login-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(59,158,255,0.45); }
+    .login-btn:active { transform: scale(0.98); }
+    .login-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .error-msg { min-height: 20px; font-size: 13px; color: var(--danger); margin-top: 12px; text-align: center; }
+
+    .divider { display: flex; align-items: center; gap: 12px; margin: 28px 0; }
+    .divider-line { flex: 1; height: 1px; background: var(--border); }
+    .divider-text { font-size: 11px; color: var(--muted); letter-spacing: 0.5px; text-transform: uppercase; }
+
+    .privacy-badge {
+      display: flex; align-items: flex-start; gap: 10px;
+      background: rgba(0,212,170,0.05); border: 1px solid rgba(0,212,170,0.12);
+      border-radius: 12px; padding: 14px;
+    }
+    .privacy-badge-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+    .privacy-badge-text { font-size: 12px; color: #3a6655; line-height: 1.6; }
+    .privacy-badge-text strong { color: #00d4aa; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+
+    @media (max-width: 768px) {
+      .page { grid-template-columns: 1fr; }
+      .left-panel { display: none; }
+      .right-panel { padding: 40px 24px; min-height: 100vh; align-items: flex-start; padding-top: 60px; }
+      .login-box { max-width: 100%; }
+      .mobile-brand { display: flex !important; }
+    }
+
+    .mobile-brand { display: none; align-items: center; gap: 10px; margin-bottom: 32px; }
+    .mobile-brand-icon { width: 40px; height: 40px; background: linear-gradient(135deg,#3b9eff,#00d4aa); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 0 20px rgba(59,158,255,0.3); }
+    .mobile-brand-name { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; color: var(--text); }
+  </style>
 </head>
-
 <body>
 
-<div class="login-box">
+  <div class="bg-canvas">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+  <div class="bg-grid"></div>
 
-<h2>Login</h2>
+  <div class="page">
 
-<input id="username" placeholder="Username">
-<input id="password" type="password" placeholder="Password">
+    <div class="left-panel">
+      <div class="brand">
+        <div class="brand-icon">💰</div>
+        <div class="brand-name">Personal Finance</div>
+      </div>
+      <div class="hero">
+        <div class="hero-tag">✦ Private by design</div>
+        <h1>Your money.<br /><span>Your rules.</span><br />Your data.</h1>
+        <p>A finance tracker built because every other app reads your data, sells it, and spams your inbox. This one doesn't.</p>
+        <div class="feature-list">
+          <div class="feature-item"><div class="feature-dot fd-blue">🧠</div>AI insights from Claude — real numbers, real advice</div>
+          <div class="feature-item"><div class="feature-dot fd-green">🔒</div>Your data stays in your database. Always.</div>
+          <div class="feature-item"><div class="feature-dot fd-purple">💬</div>Add transactions by just typing naturally</div>
+        </div>
+      </div>
+      <div class="left-footer">© 2026 Personal Finance · No ads · No tracking · No BS</div>
+    </div>
 
-<button onclick="login()">Login</button>
+    <div class="right-panel">
+      <div class="login-box">
+        <div class="mobile-brand">
+          <div class="mobile-brand-icon">💰</div>
+          <div class="mobile-brand-name">Personal Finance</div>
+        </div>
+        <h2>Welcome back</h2>
+        <div class="tagline">Sign in to your private dashboard</div>
 
-<div class="error" id="error"></div>
+        <div class="field-group">
+          <label class="field-label">Username</label>
+          <div class="field-wrap">
+            <span class="field-icon">👤</span>
+            <input id="username" type="text" placeholder="Enter your username" autocomplete="username" />
+          </div>
+        </div>
 
-</div>
+        <div class="field-group">
+          <label class="field-label">Password</label>
+          <div class="field-wrap">
+            <span class="field-icon">🔑</span>
+            <input id="password" type="password" placeholder="Enter your password" autocomplete="current-password" />
+          </div>
+        </div>
 
-<script>
+        <button class="login-btn" id="loginBtn" onclick="login()">Sign In →</button>
+        <div class="error-msg" id="error"></div>
 
-const API = "https://finance-app-t1am.onrender.com"
+        <div class="divider">
+          <div class="divider-line"></div>
+          <div class="divider-text">Privacy first</div>
+          <div class="divider-line"></div>
+        </div>
 
-async function login(){
+        <div class="privacy-badge">
+          <div class="privacy-badge-icon">🛡️</div>
+          <div class="privacy-badge-text">
+            <strong>Zero data selling.</strong> No marketing emails. No third-party tracking. Your financial life is yours alone.
+          </div>
+        </div>
+      </div>
+    </div>
 
-const username=document.getElementById("username").value
-const password=document.getElementById("password").value
+  </div>
 
-const form=new URLSearchParams()
-form.append("username",username)
-form.append("password",password)
+  <script>
+    const API = "https://finance-app-t1am.onrender.com";
 
-const res=await fetch(API+"/auth/login",{
-method:"POST",
-headers:{
-"Content-Type":"application/x-www-form-urlencoded"
-},
-body:form
-})
+    async function login() {
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value;
+      const btn = document.getElementById("loginBtn");
+      const errorEl = document.getElementById("error");
 
-if(!res.ok){
+      if (!username || !password) {
+        errorEl.textContent = "⚠ Please enter your username and password";
+        return;
+      }
 
-document.getElementById("error").innerText="Login failed"
-return
+      btn.disabled = true;
+      btn.textContent = "Signing in...";
+      errorEl.textContent = "";
 
-}
+      const form = new URLSearchParams();
+      form.append("username", username);
+      form.append("password", password);
 
-const data=await res.json()
+      try {
+        const res = await fetch(API + "/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: form
+        });
 
-localStorage.setItem("token",data.access_token)
+        if (!res.ok) {
+          errorEl.textContent = "⚠ Invalid username or password";
+          btn.disabled = false;
+          btn.textContent = "Sign In →";
+          return;
+        }
 
-window.location="./dashboard.html"
+        const data = await res.json();
+        localStorage.setItem("token", data.access_token);
+        btn.textContent = "✓ Success!";
+        setTimeout(() => { window.location = "./dashboard.html"; }, 300);
 
-}
-</script>
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/service-worker.js')
-      .then(() => console.log('Service Worker registered'))
-      .catch(err => console.log('SW error:', err));
-  }
-</script>
+      } catch (e) {
+        errorEl.textContent = "⚠ Connection error. Please try again.";
+        btn.disabled = false;
+        btn.textContent = "Sign In →";
+      }
+    }
+
+    document.addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+  </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/service-worker.js')
+        .then(() => console.log('SW registered'))
+        .catch(err => console.log('SW error:', err));
+    }
+  </script>
+
 </body>
 </html>
