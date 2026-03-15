@@ -5,68 +5,54 @@ from sqlalchemy import func
 from database import get_db
 from models.asset import Asset
 from models.liability import Liability
+from models.user import User
+from routers.auth import get_current_user
 
 router = APIRouter(prefix="/networth", tags=["Net Worth"])
 
 
 @router.get("/current")
-def get_current_networth(db: Session = Depends(get_db)):
-    latest_asset_date = db.query(func.max(Asset.date)).scalar()
-    latest_liability_date = db.query(func.max(Liability.date)).scalar()
+def get_current_networth(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    uid = current_user.id
 
-    total_assets = 0
-    total_liabilities = 0
+    latest_asset_date     = db.query(func.max(Asset.date)).filter(Asset.user_id == uid).scalar()
+    latest_liability_date = db.query(func.max(Liability.date)).filter(Liability.user_id == uid).scalar()
 
-    if latest_asset_date:
-        total_assets = (
-            db.query(func.coalesce(func.sum(Asset.value), 0))
-            .filter(Asset.date == latest_asset_date)
-            .scalar()
-        )
-
-    if latest_liability_date:
-        total_liabilities = (
-            db.query(func.coalesce(func.sum(Liability.amount), 0))
-            .filter(Liability.date == latest_liability_date)
-            .scalar()
-        )
+    total_assets      = db.query(func.coalesce(func.sum(Asset.value), 0)).filter(Asset.user_id == uid, Asset.date == latest_asset_date).scalar() if latest_asset_date else 0
+    total_liabilities = db.query(func.coalesce(func.sum(Liability.amount), 0)).filter(Liability.user_id == uid, Liability.date == latest_liability_date).scalar() if latest_liability_date else 0
 
     return {
-        "asset_snapshot_date": latest_asset_date,
+        "asset_snapshot_date":     latest_asset_date,
         "liability_snapshot_date": latest_liability_date,
-        "total_assets": round(total_assets, 2),
-        "total_liabilities": round(total_liabilities, 2),
-        "networth": round(total_assets - total_liabilities, 2)
+        "total_assets":            round(total_assets,      2),
+        "total_liabilities":       round(total_liabilities, 2),
+        "networth":                round(total_assets - total_liabilities, 2)
     }
 
 
 @router.get("/history")
-def get_networth_history(db: Session = Depends(get_db)):
-    asset_dates = [row[0] for row in db.query(Asset.date).distinct().all()]
-    liability_dates = [row[0] for row in db.query(Liability.date).distinct().all()]
+def get_networth_history(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    uid = current_user.id
 
-    all_dates = sorted(set(asset_dates + liability_dates))
+    asset_dates     = [row[0] for row in db.query(Asset.date).filter(Asset.user_id == uid).distinct().all()]
+    liability_dates = [row[0] for row in db.query(Liability.date).filter(Liability.user_id == uid).distinct().all()]
+    all_dates       = sorted(set(asset_dates + liability_dates))
 
     history = []
-
     for snapshot_date in all_dates:
-        total_assets = (
-            db.query(func.coalesce(func.sum(Asset.value), 0))
-            .filter(Asset.date == snapshot_date)
-            .scalar()
-        )
-
-        total_liabilities = (
-            db.query(func.coalesce(func.sum(Liability.amount), 0))
-            .filter(Liability.date == snapshot_date)
-            .scalar()
-        )
-
+        total_assets      = db.query(func.coalesce(func.sum(Asset.value), 0)).filter(Asset.user_id == uid, Asset.date == snapshot_date).scalar()
+        total_liabilities = db.query(func.coalesce(func.sum(Liability.amount), 0)).filter(Liability.user_id == uid, Liability.date == snapshot_date).scalar()
         history.append({
-            "date": snapshot_date,
-            "total_assets": round(total_assets, 2),
+            "date":              snapshot_date,
+            "total_assets":      round(total_assets,      2),
             "total_liabilities": round(total_liabilities, 2),
-            "networth": round(total_assets - total_liabilities, 2)
+            "networth":          round(total_assets - total_liabilities, 2)
         })
 
     return history
