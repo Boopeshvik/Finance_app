@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models.user import User
-from schemas.auth_schema import UserCreate, UserResponse, UserUpdate, PasswordReset
+from schemas.auth_schema import UserCreate, UserResponse, UserUpdate, PasswordReset, ChangePassword
 from auth import hash_password, verify_password, create_access_token, decode_access_token
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
@@ -228,3 +228,19 @@ def delete_user_by_admin(
     db.commit()
 
     return {"message": "User deleted successfully"}
+@router.post("/change-password")
+def change_password(
+    data: ChangePassword,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if not verify_password(data.current_password, current_user.hashed_password):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+    if len(data.new_password) < 6:
+        raise HTTPException(status_code=400, detail="New password must be at least 6 characters")
+
+    current_user.hashed_password = hash_password(data.new_password)
+    db.commit()
+
+    return {"message": "Password changed successfully"}

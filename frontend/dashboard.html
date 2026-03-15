@@ -1,13 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <link rel="manifest" href="/manifest.json" />
-<meta name="theme-color" content="#3b9eff" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="Personal Finance" />
-<link rel="apple-touch-icon" href="/icon-192.png" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Personal Finance Dashboard</title>
@@ -695,14 +688,6 @@
 </head>
 <body>
 
-   <script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/service-worker.js')
-      .then(() => console.log('Service Worker registered'))
-      .catch(err => console.log('SW error:', err));
-  }
-</script>
-
   <!-- Sidebar overlay (mobile) -->
   <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
@@ -711,7 +696,7 @@
     <div class="sidebar-logo">
       <div class="sidebar-logo-icon">💰</div>
       <div>
-        <div class="sidebar-logo-text">Personal Finance</div>
+        <div class="sidebar-logo-text">FinanceOS</div>
         <div class="sidebar-logo-sub">Personal Dashboard</div>
       </div>
     </div>
@@ -752,7 +737,7 @@
     </nav>
 
     <div class="sidebar-footer">
-      <div class="sub" style="font-size:11px; text-align:center; opacity:0.5;">Personal Finance v2.0</div>
+      <div class="sub" style="font-size:11px; text-align:center; opacity:0.5;">FinanceOS v2.0</div>
     </div>
   </aside>
 
@@ -769,11 +754,38 @@
         </div>
       </div>
       <div class="header-right">
-        <input id="apiUrl" type="text" class="api-input" value=https://finance-app-t1am.onrender.com/dashboard/overview""/>
+        <input id="apiUrl" type="text" class="api-input" value="http://127.0.0.1:8000/dashboard/overview" />
         <button class="header-btn" id="refreshBtn">⟳ Refresh</button>
+        <button class="header-btn" onclick="openChangePassword()" style="background:#1e4d8c;" title="Change Password">&#128273; Password</button>
         <button class="header-btn" onclick="logout()" style="background:#ef4444;">Logout</button>
       </div>
     </header>
+
+
+    <!-- CHANGE PASSWORD MODAL -->
+    <div id="changePwModal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.75); backdrop-filter:blur(4px); align-items:center; justify-content:center;">
+      <div style="background:#0f1b2d; border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:32px; width:100%; max-width:420px; margin:20px; box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+        <h3 style="margin:0 0 6px; font-size:18px; color:var(--text);">&#128273; Change Password</h3>
+        <div class="sub" style="margin-bottom:24px;">Update your account password securely</div>
+        <div style="margin-bottom:14px;">
+          <label style="font-size:12px; font-weight:600; color:var(--muted); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">Current Password</label>
+          <input id="cpCurrentPassword" type="password" placeholder="Enter your current password" style="width:100%;" />
+        </div>
+        <div style="margin-bottom:14px;">
+          <label style="font-size:12px; font-weight:600; color:var(--muted); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">New Password</label>
+          <input id="cpNewPassword" type="password" placeholder="Minimum 6 characters" style="width:100%;" />
+        </div>
+        <div style="margin-bottom:20px;">
+          <label style="font-size:12px; font-weight:600; color:var(--muted); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">Confirm New Password</label>
+          <input id="cpConfirmPassword" type="password" placeholder="Confirm your new password" style="width:100%;" />
+        </div>
+        <div id="cpMessage" style="font-size:13px; margin-bottom:16px; min-height:20px;"></div>
+        <div style="display:flex; gap:10px;">
+          <button onclick="submitChangePassword()" id="cpSubmitBtn" style="flex:1; padding:12px; background:linear-gradient(135deg,#3b9eff,#2563eb); border:none; border-radius:8px; color:white; font-size:14px; font-weight:600; cursor:pointer;">Update Password</button>
+          <button onclick="closeChangePassword()" style="padding:12px 20px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:var(--muted); font-size:14px; cursor:pointer;">Cancel</button>
+        </div>
+      </div>
+    </div>
 
     <!-- ══ MAIN CONTENT ══ -->
     <main class="main-content">
@@ -3096,6 +3108,81 @@
     // Allow Enter key on NL input
     document.getElementById('nlTransactionInput').addEventListener('keydown', function(e) {
       if (e.key === 'Enter') parseNLTransaction();
+    });
+
+
+    // ═══════════════════════════════════════════════
+    //  CHANGE PASSWORD
+    // ═══════════════════════════════════════════════
+
+    function openChangePassword() {
+      const modal = document.getElementById('changePwModal');
+      modal.style.display = 'flex';
+      document.getElementById('cpCurrentPassword').value = '';
+      document.getElementById('cpNewPassword').value = '';
+      document.getElementById('cpConfirmPassword').value = '';
+      document.getElementById('cpMessage').textContent = '';
+    }
+
+    function closeChangePassword() {
+      document.getElementById('changePwModal').style.display = 'none';
+    }
+
+    async function submitChangePassword() {
+      const current = document.getElementById('cpCurrentPassword').value.trim();
+      const newPw   = document.getElementById('cpNewPassword').value.trim();
+      const confirm = document.getElementById('cpConfirmPassword').value.trim();
+      const msg     = document.getElementById('cpMessage');
+      const btn     = document.getElementById('cpSubmitBtn');
+
+      msg.style.color = 'var(--bad)';
+
+      if (!current || !newPw || !confirm) {
+        msg.textContent = 'Please fill in all fields.';
+        return;
+      }
+      if (newPw.length < 6) {
+        msg.textContent = 'New password must be at least 6 characters.';
+        return;
+      }
+      if (newPw !== confirm) {
+        msg.textContent = 'New passwords do not match.';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Updating...';
+      msg.textContent = '';
+
+      try {
+        const res = await authFetch(`${getApiBase()}/auth/change-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ current_password: current, new_password: newPw })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          msg.style.color = 'var(--bad)';
+          msg.textContent = data.detail || 'Failed to update password.';
+        } else {
+          msg.style.color = 'var(--good)';
+          msg.textContent = '✅ Password updated successfully!';
+          setTimeout(() => closeChangePassword(), 1500);
+        }
+      } catch (e) {
+        msg.style.color = 'var(--bad)';
+        msg.textContent = 'Connection error. Please try again.';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Update Password';
+      }
+    }
+
+    // Close modal on backdrop click
+    document.getElementById('changePwModal').addEventListener('click', function(e) {
+      if (e.target === this) closeChangePassword();
     });
 
     showSection('dashboard');
