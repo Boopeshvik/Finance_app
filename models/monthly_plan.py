@@ -1,11 +1,10 @@
-from sqlalchemy import Column, Integer, Float
+﻿from sqlalchemy import Column, Integer, Float, ForeignKey
 from database import Base
-
 
 class MonthlyPlan(Base):
     __tablename__ = "monthly_plans"
-
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     month = Column(Integer, nullable=False)
     year = Column(Integer, nullable=False)
     planned_income = Column(Float, nullable=False)
