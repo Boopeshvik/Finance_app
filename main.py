@@ -29,6 +29,9 @@ from models.category import Category
 
 Base.metadata.create_all(bind=engine)
 
+from database import run_migrations
+run_migrations()
+
 app = FastAPI(title="Personal Finance Tracker API")
 
 allowed_origins = [

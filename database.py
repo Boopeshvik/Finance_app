@@ -1,3 +1,4 @@
+from sqlalchemy import create_engine, text
 import os
 
 from sqlalchemy import create_engine
@@ -30,3 +31,24 @@ def get_db():
         yield db
     finally:
         db.close()
+def run_migrations():
+    """Add missing columns to existing tables"""
+    with engine.connect() as conn:
+        # Add user_id to monthly_plans if not exists
+        conn.execute(text("""
+            ALTER TABLE monthly_plans 
+            ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id)
+        """))
+        # Add user_id to yearly_plans if not exists
+        conn.execute(text("""
+            ALTER TABLE yearly_plans 
+            ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id)
+        """))
+        # Set existing records to user id 1
+        conn.execute(text("""
+            UPDATE monthly_plans SET user_id = 1 WHERE user_id IS NULL
+        """))
+        conn.execute(text("""
+            UPDATE yearly_plans SET user_id = 1 WHERE user_id IS NULL
+        """))
+        conn.commit()
