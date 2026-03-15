@@ -1,5 +1,4 @@
 import os
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -32,11 +31,21 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Personal Finance Tracker API")
 
-FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "*")
+allowed_origins = [
+    "https://finance-app-gilt-phi.vercel.app",
+    "http://localhost:5500",
+    "http://127.0.0.1:5500",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+extra_origin = os.getenv("FRONTEND_ORIGIN", "")
+if extra_origin and extra_origin not in allowed_origins:
+    allowed_origins.append(extra_origin)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[FRONTEND_ORIGIN] if FRONTEND_ORIGIN != "*" else ["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
