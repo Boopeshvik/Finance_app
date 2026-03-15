@@ -1,6 +1,6 @@
 ﻿{
-  "name": "FinanceOS - Personal Finance Dashboard",
-  "short_name": "FinanceOS",
+  "name": "Personal Finance",
+  "short_name": "Personal Finance",
   "description": "Your private AI-powered personal finance tracker",
   "start_url": "/login.html",
   "display": "standalone",
