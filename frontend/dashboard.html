@@ -754,7 +754,7 @@
         </div>
       </div>
       <div class="header-right">
-        <input id="apiUrl" type="text" class="api-input" value=" https://finance-app-t1am.onrender.com/dashboard/overview" />
+        <input id="apiUrl" type="text" class="api-input" value="https://finance-app-t1am.onrender.com/dashboard/overview" />
         <button class="header-btn" id="refreshBtn">⟳ Refresh</button>
         <button class="header-btn" onclick="openChangePassword()" style="background:#1e4d8c;" title="Change Password">&#128273; Password</button>
         <button class="header-btn" onclick="logout()" style="background:#ef4444;">Logout</button>
@@ -893,6 +893,58 @@
 
     <!-- TRANSACTIONS SECTION -->
     <section id="transactions">
+
+
+      <!-- BANK STATEMENT IMPORT -->
+      <div class="panel stack-gap" style="border:1px solid rgba(0,212,170,0.3); background:linear-gradient(135deg, rgba(0,212,170,0.05), rgba(59,158,255,0.05));">
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+          <div>
+            <h3 style="margin:0 0 4px;">&#128196; Import Lloyds Bank Statement</h3>
+            <div class="sub">Upload your PDF statement — AI will extract all transactions automatically</div>
+          </div>
+          <label for="bankStatementFile" style="background:linear-gradient(135deg,#00d4aa,#0ea5e9); border:none; color:#fff; padding:10px 20px; border-radius:8px; font-weight:600; cursor:pointer; white-space:nowrap; display:inline-block;">
+            &#128196; Choose PDF
+          </label>
+          <input type="file" id="bankStatementFile" accept=".pdf" style="display:none;" onchange="parseBankStatement()" />
+        </div>
+
+        <div id="bankParseLoading" style="display:none; padding:16px 0;">
+          <div style="display:flex; align-items:center; gap:10px; color:var(--muted); font-size:14px;">
+            <span style="animation: spin 1s linear infinite; display:inline-block;">⏳</span>
+            Claude is reading your statement... this may take 15-30 seconds
+          </div>
+        </div>
+
+        <div id="bankParseResult" style="display:none;">
+          <div id="bankStatementSummary" style="background:rgba(0,212,170,0.08); border:1px solid rgba(0,212,170,0.15); border-radius:8px; padding:14px; margin-bottom:16px;"></div>
+          <div style="overflow:auto; margin-bottom:16px;">
+            <table id="bankImportTable">
+              <thead>
+                <tr>
+                  <th style="width:30px;"><input type="checkbox" id="selectAllBank" onchange="toggleAllBankRows(this)" /></th>
+                  <th>Date</th>
+                  <th>Description</th>
+                  <th>Type</th>
+                  <th>Amount</th>
+                  <th>Category</th>
+                </tr>
+              </thead>
+              <tbody id="bankImportTableBody"></tbody>
+            </table>
+          </div>
+          <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+            <button onclick="importSelectedTransactions()" style="background:linear-gradient(135deg,#00d4aa,#0ea5e9); border:none; color:#fff; padding:11px 24px; border-radius:8px; font-weight:600; cursor:pointer;">
+              &#10003; Import Selected
+            </button>
+            <button onclick="resetBankImport()" style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); color:var(--muted); padding:11px 20px; border-radius:8px; cursor:pointer;">
+              Clear
+            </button>
+            <div id="bankImportMessage" class="sub"></div>
+          </div>
+        </div>
+
+        <div id="bankParseError" style="display:none; color:var(--bad); font-size:13px;"></div>
+      </div>
 
       <!-- AI Natural Language Input -->
       <div class="panel stack-gap" style="border:1px solid rgba(59,158,255,0.3); background:linear-gradient(135deg, rgba(59,158,255,0.05), rgba(124,58,237,0.05));">
@@ -3102,6 +3154,208 @@
       } finally {
         btn.disabled = false;
         btn.innerHTML = '&#10024; Parse with AI';
+      }
+    }
+
+
+    // ═══════════════════════════════════════════════
+    //  BANK STATEMENT PARSER
+    // ═══════════════════════════════════════════════
+
+    let parsedBankTransactions = [];
+
+    async function parseBankStatement() {
+      const fileInput = document.getElementById('bankStatementFile');
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      const loading  = document.getElementById('bankParseLoading');
+      const result   = document.getElementById('bankParseResult');
+      const error    = document.getElementById('bankParseError');
+
+      loading.style.display = 'block';
+      result.style.display  = 'none';
+      error.style.display   = 'none';
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const res = await authFetch(`${getApiBase()}/ai/bank/parse-statement`, {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          error.textContent = data.detail || 'Failed to parse statement.';
+          error.style.display = 'block';
+          loading.style.display = 'none';
+          return;
+        }
+
+        parsedBankTransactions = data.transactions || [];
+
+        // Show summary
+        document.getElementById('bankStatementSummary').innerHTML = `
+          <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px;">
+            <div><div style="font-size:11px; color:var(--muted); margin-bottom:3px;">PERIOD</div><strong style="font-size:14px;">${data.statement_period || 'Unknown'}</strong></div>
+            <div><div style="font-size:11px; color:var(--muted); margin-bottom:3px;">TRANSACTIONS</div><strong style="font-size:14px;">${data.transaction_count}</strong></div>
+            <div><div style="font-size:11px; color:var(--muted); margin-bottom:3px;">TOTAL IN</div><strong style="font-size:14px; color:var(--good);">£${parseFloat(data.total_in||0).toFixed(2)}</strong></div>
+            <div><div style="font-size:11px; color:var(--muted); margin-bottom:3px;">TOTAL OUT</div><strong style="font-size:14px; color:var(--bad);">£${parseFloat(data.total_out||0).toFixed(2)}</strong></div>
+          </div>
+        `;
+
+        // Build table
+        const tbody = document.getElementById('bankImportTableBody');
+        tbody.innerHTML = '';
+
+        parsedBankTransactions.forEach((tx, i) => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td><input type="checkbox" class="bank-row-check" data-index="${i}" checked /></td>
+            <td style="white-space:nowrap;">${tx.date}</td>
+            <td>${tx.description}</td>
+            <td><span class="pill ${tx.type === 'income' ? 'good' : 'bad'}">${tx.type}</span></td>
+            <td style="white-space:nowrap;">£${parseFloat(tx.amount).toFixed(2)}</td>
+            <td>
+              <input type="text" value="${tx.suggested_category || 'Other'}"
+                data-index="${i}"
+                class="bank-category-input"
+                style="padding:4px 8px; font-size:12px; width:110px;"
+                oninput="parsedBankTransactions[${i}].suggested_category = this.value" />
+            </td>
+          `;
+          tbody.appendChild(row);
+        });
+
+        loading.style.display = 'none';
+        result.style.display  = 'block';
+        document.getElementById('bankImportMessage').textContent = '';
+
+      } catch (e) {
+        error.textContent = 'Connection error. Please try again.';
+        error.style.display = 'block';
+        loading.style.display = 'none';
+      }
+    }
+
+    function toggleAllBankRows(checkbox) {
+      document.querySelectorAll('.bank-row-check').forEach(cb => cb.checked = checkbox.checked);
+    }
+
+    function resetBankImport() {
+      document.getElementById('bankStatementFile').value = '';
+      document.getElementById('bankParseResult').style.display = 'none';
+      document.getElementById('bankParseError').style.display  = 'none';
+      document.getElementById('bankParseLoading').style.display = 'none';
+      parsedBankTransactions = [];
+    }
+
+    async function ensureCategoryExists(name, type) {
+      // Check if category already exists in cached data
+      const cache = window.categoryCache || [];
+      const existing = cache.find(
+        c => c.name.toLowerCase() === name.toLowerCase() && c.type === type
+      );
+      if (existing) return true;
+
+      // Create it
+      try {
+        const res = await authFetch(`${getApiBase()}/categories/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name:        name.toLowerCase(),
+            type:        type,
+            description: `Auto-created from bank statement import`
+          })
+        });
+        if (res.ok) {
+          const created = await res.json();
+          if (!window.categoryCache) window.categoryCache = [];
+          window.categoryCache.push(created);
+          return true;
+        }
+        return false;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    async function importSelectedTransactions() {
+      const checked = document.querySelectorAll('.bank-row-check:checked');
+      if (checked.length === 0) {
+        document.getElementById('bankImportMessage').style.color = 'var(--warn)';
+        document.getElementById('bankImportMessage').textContent = 'Please select at least one transaction.';
+        return;
+      }
+
+      const msg = document.getElementById('bankImportMessage');
+      msg.style.color = 'var(--muted)';
+      msg.textContent = `Step 1/2: Creating missing categories...`;
+
+      // Collect unique categories needed
+      const neededCategories = new Set();
+      const selectedTxs = [];
+      for (const cb of checked) {
+        const i  = parseInt(cb.dataset.index);
+        const tx = parsedBankTransactions[i];
+        const category = (tx.suggested_category || 'other').toLowerCase().trim();
+        neededCategories.add(JSON.stringify({ name: category, type: tx.type }));
+        selectedTxs.push({ ...tx, category });
+      }
+
+      // Auto-create any missing categories
+      let categoriesCreated = 0;
+      for (const entry of neededCategories) {
+        const { name, type } = JSON.parse(entry);
+        const created = await ensureCategoryExists(name, type);
+        if (created) categoriesCreated++;
+      }
+
+      msg.textContent = `Step 2/2: Importing ${selectedTxs.length} transactions...`;
+
+      let success = 0;
+      let failed  = 0;
+      let failedDetails = [];
+
+      for (const tx of selectedTxs) {
+        try {
+          const res = await authFetch(`${getApiBase()}/transactions/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type:        tx.type,
+              category:    tx.category,
+              amount:      parseFloat(tx.amount),
+              date:        tx.date,
+              description: tx.description
+            })
+          });
+
+          if (res.ok) {
+            success++;
+          } else {
+            const err = await res.json();
+            failed++;
+            failedDetails.push(err.detail || 'Unknown error');
+          }
+        } catch (e) {
+          failed++;
+        }
+      }
+
+      if (success > 0) {
+        msg.style.color = 'var(--good)';
+        msg.textContent = `✅ ${success} transactions imported! ${categoriesCreated > 0 ? `(${categoriesCreated} categories auto-created)` : ''} ${failed > 0 ? `| ${failed} failed` : ''}`;
+        await loadTransactions();
+        await loadCategories();
+        await loadDashboard();
+      } else {
+        msg.style.color = 'var(--bad)';
+        msg.textContent = `❌ Import failed. ${failedDetails[0] || 'Please try again.'}`;
       }
     }
 

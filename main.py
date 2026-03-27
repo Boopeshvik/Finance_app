@@ -4,6 +4,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from database import Base, engine
 
+# With other imports at top
+from routers.bank_statement import router as bank_statement_router
+
+
 from routers.auth import router as auth_router
 from routers.transactions import router as transactions_router
 from routers.plans import router as plans_router
@@ -66,6 +70,7 @@ app.include_router(dashboard_router)
 app.include_router(budgets_router)
 app.include_router(categories_router)
 app.include_router(ai_router)
+app.include_router(bank_statement_router)
 
 
 @app.get("/")
