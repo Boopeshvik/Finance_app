@@ -73,8 +73,8 @@ def update_category(
     category_type = data.type.strip().lower()
     category_name = data.name.strip().lower()
 
-    if category_type not in ["income", "expense"]:
-        raise HTTPException(status_code=400, detail="type must be either 'income' or 'expense'")
+    if category_type not in ["income", "expense", "savings"]:
+        raise HTTPException(status_code=400, detail="type must be 'income', 'expense' or 'savings'")
 
     duplicate = (
         db.query(Category)
