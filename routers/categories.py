@@ -19,7 +19,7 @@ def create_category(
     category_type = data.type.strip().lower()
     category_name = data.name.strip().lower()
 
-    if category_type not in ["income", "expense"]:
+    if category_type not in ["income", "expense", "savings"]:
         raise HTTPException(status_code=400, detail="type must be either 'income' or 'expense'")
 
     existing = (
