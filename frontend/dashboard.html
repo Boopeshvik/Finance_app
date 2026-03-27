@@ -939,7 +939,7 @@
             <button onclick="resetBankImport()" style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); color:var(--muted); padding:11px 20px; border-radius:8px; cursor:pointer;">
               Clear
             </button>
-            <div id="bankImportMessage" class="sub"></div>
+            <div id="bankImportMessage" style="margin-top:12px; width:100%;"></div>
           </div>
         </div>
 
@@ -3318,8 +3318,7 @@
       msg.textContent = `Step 2/2: Importing ${selectedTxs.length} transactions...`;
 
       let success = 0;
-      let failed  = 0;
-      let failedDetails = [];
+      let failedTxs = [];
 
       for (const tx of selectedTxs) {
         try {
@@ -3339,23 +3338,73 @@
             success++;
           } else {
             const err = await res.json();
-            failed++;
-            failedDetails.push(err.detail || 'Unknown error');
+            failedTxs.push({
+              date:        tx.date,
+              description: tx.description,
+              amount:      tx.amount,
+              type:        tx.type,
+              category:    tx.category,
+              reason:      err.detail || 'Unknown error'
+            });
           }
         } catch (e) {
-          failed++;
+          failedTxs.push({
+            date:        tx.date,
+            description: tx.description,
+            amount:      tx.amount,
+            type:        tx.type,
+            category:    tx.category,
+            reason:      'Connection error'
+          });
         }
       }
 
+      // Build results HTML
+      const failedCount = failedTxs.length;
+      let html = '';
+
       if (success > 0) {
-        msg.style.color = 'var(--good)';
-        msg.textContent = `✅ ${success} transactions imported! ${categoriesCreated > 0 ? `(${categoriesCreated} categories auto-created)` : ''} ${failed > 0 ? `| ${failed} failed` : ''}`;
+        html += `<div style="color:var(--good); font-weight:600; margin-bottom:8px;">
+          ✅ ${success} transactions imported successfully!
+          ${categoriesCreated > 0 ? `<span style="color:var(--accent); font-weight:400;"> · ${categoriesCreated} categories auto-created</span>` : ''}
+        </div>`;
+      }
+
+      if (failedCount > 0) {
+        html += `<div style="color:var(--warn); font-weight:600; margin-bottom:8px;">⚠️ ${failedCount} transaction${failedCount > 1 ? 's' : ''} failed to import:</div>`;
+        html += `<div style="overflow:auto; max-height:200px;">
+          <table style="font-size:12px; width:100%;">
+            <thead>
+              <tr>
+                <th style="text-align:left; padding:4px 8px; color:var(--muted);">Date</th>
+                <th style="text-align:left; padding:4px 8px; color:var(--muted);">Description</th>
+                <th style="text-align:left; padding:4px 8px; color:var(--muted);">Amount</th>
+                <th style="text-align:left; padding:4px 8px; color:var(--muted);">Category</th>
+                <th style="text-align:left; padding:4px 8px; color:var(--muted);">Reason</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${failedTxs.map(f => `
+                <tr style="border-top:1px solid var(--border);">
+                  <td style="padding:5px 8px; white-space:nowrap;">${f.date}</td>
+                  <td style="padding:5px 8px;">${f.description}</td>
+                  <td style="padding:5px 8px; white-space:nowrap;">£${parseFloat(f.amount).toFixed(2)}</td>
+                  <td style="padding:5px 8px;">${f.category}</td>
+                  <td style="padding:5px 8px; color:var(--bad);">${f.reason}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>`;
+      }
+
+      msg.style.color = 'var(--text)';
+      msg.innerHTML = html;
+
+      if (success > 0) {
         await loadTransactions();
         await loadCategories();
         await loadDashboard();
-      } else {
-        msg.style.color = 'var(--bad)';
-        msg.textContent = `❌ Import failed. ${failedDetails[0] || 'Please try again.'}`;
       }
     }
 
