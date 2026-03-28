@@ -35,7 +35,7 @@ CATEGORY_RULES = [
       "primark", "h&m", "zara", "asos", "boots", "superdrug", "ikea"], "Shopping"),
     (["everyone active", "pure gym", "david lloyd", "nuffield", "gym",
       "pharmacy", "nhs", "dentist", "chemist", "wellhub", "fitness"], "Health"),
-    (["vanguard", "hargreaves", "isa ", "fidelity", "nutmeg", "investment"], "Savings"),
+    (["vanguard", "hargreaves", "isa ", "fidelity", "nutmeg", "investment"], "investment"),
     (["insurance", "aviva", "admiral", "axa", "direct line",
       "post office life", "life assurance"], "Insurance"),
 ]
@@ -52,7 +52,7 @@ def guess_category(description: str, type_code: str, is_income: bool) -> str:
     if type_code in ("BGC", "FPI") and "mars" in desc:
         return "Salary"
     if type_code == "DD" and "vanguard" in desc:
-        return "Savings"
+        return "investment"
     if type_code == "FPO" and any(k in desc for k in ["american exp", "lloyds bank platin", "credit card"]):
         return "Other"
     if is_income and type_code in ("FPI", "BGC"):

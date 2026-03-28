@@ -21,7 +21,7 @@ def create_transaction(
     transaction_type = data.type.strip().lower()
     category_name = data.category.strip().lower()
 
-    if transaction_type not in ["income", "expense", "savings"]:
+    if transaction_type not in ["income", "expense", "investment"]:
         raise HTTPException(status_code=400, detail="type must be either 'income' or 'expense'")
 
     category = (
@@ -120,7 +120,7 @@ def update_transaction(
     transaction_type = data.type.strip().lower()
     category_name = data.category.strip().lower()
 
-    if transaction_type not in ["income", "expense", "savings"]:
+    if transaction_type not in ["income", "expense", "investment"]:
         raise HTTPException(status_code=400, detail="type must be 'income', 'expense' or 'savings'")
 
     category = (

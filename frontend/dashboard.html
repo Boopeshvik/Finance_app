@@ -967,7 +967,7 @@
             <form id="transactionForm">
               <input type="hidden" id="transactionId" />
               <div class="two-col" style="margin-bottom:12px;">
-                <input id="transactionType" type="text" placeholder="Type: income, expense or savings" required />
+                <input id="transactionType" type="text" placeholder="Type: income, expense or investment" required />
                 <div class="cat-dropdown-wrap">
                   <input id="transactionCategory" type="text" class="cat-search-input" placeholder="Select or search category…" autocomplete="off" required />
                   <span class="cat-dropdown-arrow">▾</span>
@@ -1014,7 +1014,7 @@
               <option value="">All</option>
               <option value="income">Income</option>
               <option value="expense">Expense</option>
-              <option value="savings">Savings</option>
+              <option value="investment">Investment</option>
             </select>
           </label>
           <label>Category
@@ -1401,7 +1401,7 @@
               <input type="hidden" id="categoryId" />
               <div class="two-col" style="margin-bottom:12px;">
                 <input id="categoryName" type="text" placeholder="Category name e.g. Food" required />
-                <input id="categoryType" type="text" placeholder="Type: expense, income or savings" required />
+                <input id="categoryType" type="text" placeholder="Type: expense, income or investment" required />
               </div>
               <div style="margin-bottom:12px;">
                 <input id="categoryDescription" type="text" placeholder="Description (optional)" />
@@ -2568,7 +2568,7 @@
           <tr>
             <td>${item.id}</td>
             <td><strong>${item.name}</strong></td>
-            <td><span class="pill ${item.type === 'income' ? 'good' : item.type === 'savings' ? 'savings' : 'fair'}">${item.type || '—'}</span></td>
+            <td><span class="pill ${item.type === 'income' ? 'good' : item.type === 'investment' ? 'savings' : 'fair'}">${item.type || '—'}</span></td>
             <td class="sub">${item.description || '—'}</td>
             <td>
               <div class="actions">
@@ -2764,7 +2764,7 @@
           <td>${item.id}</td>
           <td>${item.date}</td>
           <td style="text-transform:capitalize;">
-            <span class="pill ${item.type === 'income' ? 'good' : item.type === 'savings' ? 'savings' : 'fair'}">${item.type}</span>
+            <span class="pill ${item.type === 'income' ? 'good' : item.type === 'investment' ? 'savings' : 'fair'}">${item.type}</span>
           </td>
           <td>${item.category}</td>
           <td>${currency(item.amount)}</td>
@@ -3218,7 +3218,7 @@
             <td><input type="checkbox" class="bank-row-check" data-index="${i}" checked /></td>
             <td style="white-space:nowrap;">${tx.date}</td>
             <td>${tx.description}</td>
-            <td><span class="pill ${tx.type === 'income' ? 'good' : tx.type === 'savings' ? 'savings' : 'bad'}">${tx.type}</span></td>
+            <td><span class="pill ${tx.type === 'income' ? 'good' : tx.type === 'investment' ? 'savings' : 'bad'}">${tx.type}</span></td>
             <td style="white-space:nowrap;">£${parseFloat(tx.amount).toFixed(2)}</td>
             <td>
               <input type="text" value="${tx.suggested_category || 'Other'}"
