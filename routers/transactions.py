@@ -22,7 +22,7 @@ def create_transaction(
     category_name = data.category.strip().lower()
 
     if transaction_type not in ["income", "expense", "investment"]:
-        raise HTTPException(status_code=400, detail="type must be either 'income' or 'expense'")
+        raise HTTPException(status_code=400, detail="type must be 'income', 'expense' or 'investment'")
 
     category = (
         db.query(Category)
