@@ -793,6 +793,38 @@
 
       <!-- DASHBOARD SECTION -->
     <section id="dashboard">
+
+      <!-- ── DASHBOARD DATE FILTER ── -->
+      <div class="panel" style="margin-bottom:20px; padding:14px 20px;">
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+          <span style="font-size:13px; font-weight:600; color:var(--muted);">📅 Period</span>
+          <select id="dashMonth" style="padding:7px 12px; border-radius:8px; background:var(--panel-2); border:1px solid var(--border); color:var(--text); font-size:13px;">
+            <option value="1">January</option>
+            <option value="2">February</option>
+            <option value="3">March</option>
+            <option value="4">April</option>
+            <option value="5">May</option>
+            <option value="6">June</option>
+            <option value="7">July</option>
+            <option value="8">August</option>
+            <option value="9">September</option>
+            <option value="10">October</option>
+            <option value="11">November</option>
+            <option value="12">December</option>
+          </select>
+          <select id="dashYear" style="padding:7px 12px; border-radius:8px; background:var(--panel-2); border:1px solid var(--border); color:var(--text); font-size:13px;">
+            <option value="2023">2023</option>
+            <option value="2024">2024</option>
+            <option value="2025">2025</option>
+            <option value="2026" selected>2026</option>
+            <option value="2027">2027</option>
+          </select>
+          <button onclick="applyDashboardFilter()" style="padding:7px 18px; background:var(--accent); border:none; border-radius:8px; color:#fff; font-size:13px; font-weight:600; cursor:pointer;">Apply</button>
+          <button onclick="resetDashboardFilter()" style="padding:7px 14px; background:rgba(255,255,255,0.06); border:1px solid var(--border); border-radius:8px; color:var(--muted); font-size:13px; cursor:pointer;">Reset to Current</button>
+          <span id="dashFilterBadge" style="font-size:12px; color:var(--accent); display:none;">Showing filtered period</span>
+        </div>
+      </div>
+
       <div class="grid-cards">
         <div class="card">
           <h3>Monthly Income</h3>
@@ -1847,9 +1879,22 @@
       }).join('');
     }
 
+    const MONTH_NAMES = ['','January','February','March','April','May','June','July','August','September','October','November','December'];
+
     function renderDashboard(data) {
       const periodEl = document.getElementById('periodText');
-      if (periodEl) periodEl.textContent = `Period: ${data.period.month}/${data.period.year}`;
+      const monthName = MONTH_NAMES[data.period.month] || data.period.month;
+      if (periodEl) periodEl.textContent = `Period: ${monthName} ${data.period.year}`;
+
+      // Update card titles to reflect selected period
+      const isCurrentMonth = data.period.month === new Date().getMonth() + 1 && data.period.year === new Date().getFullYear();
+      const periodLabel = isCurrentMonth ? 'Monthly' : monthName;
+      document.querySelectorAll('.card h3').forEach(h => {
+        if (h.textContent.includes('Income'))  h.textContent = `${periodLabel} Income`;
+        if (h.textContent.includes('Expenses')) h.textContent = `${periodLabel} Expenses`;
+        if (h.textContent.includes('Savings'))  h.textContent = `${periodLabel} Savings`;
+      });
+
       document.getElementById('incomeValue').textContent = currency(data.monthly_summary.income);
       document.getElementById('expenseValue').textContent = currency(data.monthly_summary.expenses);
       document.getElementById('savingsValue').textContent = currency(data.monthly_summary.savings);
@@ -1870,12 +1915,50 @@
       document.getElementById('rawJson').textContent = JSON.stringify(data, null, 2);
     }
 
+    function getDashboardUrl() {
+      const base = apiUrlInput.value.trim();
+      const monthEl = document.getElementById('dashMonth');
+      const yearEl  = document.getElementById('dashYear');
+      if (!monthEl || !yearEl) return base;
+      const month = monthEl.value;
+      const year  = yearEl.value;
+      // Replace the overview URL but keep the base
+      const apiBase = base.replace('/dashboard/overview', '');
+      return `${apiBase}/dashboard/overview?month=${month}&year=${year}`;
+    }
+
+    function applyDashboardFilter() {
+      const badge = document.getElementById('dashFilterBadge');
+      if (badge) badge.style.display = 'inline';
+      loadDashboard();
+      // Also sync the BVA report month/year
+      const bvaMonth = document.getElementById('bvaMonth');
+      const bvaYear  = document.getElementById('bvaYear');
+      const dashMonth = document.getElementById('dashMonth');
+      const dashYear  = document.getElementById('dashYear');
+      if (bvaMonth && dashMonth) bvaMonth.value = dashMonth.value;
+      if (bvaYear  && dashYear)  bvaYear.value  = dashYear.value;
+      loadBudgetReport();
+    }
+
+    function resetDashboardFilter() {
+      const now = new Date();
+      const monthEl = document.getElementById('dashMonth');
+      const yearEl  = document.getElementById('dashYear');
+      if (monthEl) monthEl.value = String(now.getMonth() + 1);
+      if (yearEl)  yearEl.value  = String(now.getFullYear());
+      const badge = document.getElementById('dashFilterBadge');
+      if (badge) badge.style.display = 'none';
+      loadDashboard();
+    }
+
     async function loadDashboard() {
       errorBox.style.display = 'none';
       errorBox.textContent = '';
 
       try {
-        const response = await authFetch(apiUrlInput.value.trim());
+        const url = getDashboardUrl();
+        const response = await authFetch(url);
         if (!response.ok) throw new Error(`Request failed with status ${response.status}`);
         const data = await response.json();
         renderDashboard(data);
@@ -3739,6 +3822,15 @@
         msg.textContent = 'Failed to load report: ' + e.message;
       }
     }
+
+    // Set dashboard filter to current month/year on load
+    (function() {
+      const now = new Date();
+      const m = document.getElementById('dashMonth');
+      const y = document.getElementById('dashYear');
+      if (m) m.value = String(now.getMonth() + 1);
+      if (y) y.value = String(now.getFullYear());
+    })();
 
     showSection('dashboard');
 

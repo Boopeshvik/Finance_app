@@ -18,14 +18,19 @@ from routers.auth import get_current_user
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
 
+from typing import Optional
+from fastapi import Query
+
 @router.get("/overview")
 def get_dashboard_overview(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    month: Optional[int] = Query(default=None, ge=1, le=12),
+    year: Optional[int] = Query(default=None, ge=2000, le=2100)
 ):
     today = date.today()
-    month = today.month
-    year = today.year
+    month = month or today.month
+    year  = year  or today.year
     uid = current_user.id
 
     # ── Monthly summary ──────────────────────────────
