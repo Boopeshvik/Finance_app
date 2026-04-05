@@ -727,6 +727,11 @@
         <span class="nav-icon">🏷️</span> Categories
       </button>
 
+      <span class="nav-group-label">Investment</span>
+      <button class="nav-item" id="nav-investment" onclick="showSection('investment')">
+        <span class="nav-icon">💹</span> Investments
+      </button>
+
       <span class="nav-group-label">Net Worth</span>
       <button class="nav-item" id="nav-assets" onclick="showSection('assets')">
         <span class="nav-icon">📈</span> Assets
@@ -1535,6 +1540,95 @@
     <!-- ════════════════════════════════════════════
          CHARTS SECTION
          ════════════════════════════════════════════ -->
+
+    <!-- ════════════════════════════════════════════
+         INVESTMENT SECTION
+         ════════════════════════════════════════════ -->
+    <section id="investment">
+
+      <!-- Filter bar -->
+      <div class="panel" style="margin-bottom:20px; padding:14px 20px;">
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+          <span style="font-size:13px; font-weight:600; color:var(--muted);">📅 Period</span>
+          <select id="invYear" style="padding:7px 12px; border-radius:8px; background:var(--panel-2); border:1px solid var(--border); color:var(--text); font-size:13px;">
+            <option value="2022">2022</option>
+            <option value="2023">2023</option>
+            <option value="2024">2024</option>
+            <option value="2025">2025</option>
+            <option value="2026" selected>2026</option>
+          </select>
+          <button onclick="loadInvestments()" style="padding:7px 18px; background:var(--accent); border:none; border-radius:8px; color:#fff; font-size:13px; font-weight:600; cursor:pointer;">Load</button>
+          <button onclick="loadAllTimeInvestments()" style="padding:7px 14px; background:rgba(255,255,255,0.06); border:1px solid var(--border); border-radius:8px; color:var(--muted); font-size:13px; cursor:pointer;">All Time</button>
+          <span id="invPeriodLabel" style="font-size:12px; color:var(--accent);"></span>
+        </div>
+      </div>
+
+      <!-- Summary cards -->
+      <div class="grid-cards" style="margin-bottom:20px;">
+        <div class="card">
+          <h3>Total Invested</h3>
+          <div class="value" id="invTotalInvested">—</div>
+          <div class="sub">All time contributions</div>
+        </div>
+        <div class="card">
+          <h3>Transactions</h3>
+          <div class="value" id="invTxCount">—</div>
+          <div class="sub" id="invDateRange">—</div>
+        </div>
+        <div class="card">
+          <h3>Avg Monthly</h3>
+          <div class="value" id="invAvgMonthly">—</div>
+          <div class="sub">Average per month invested</div>
+        </div>
+        <div class="card">
+          <h3>Largest Single</h3>
+          <div class="value" id="invLargest">—</div>
+          <div class="sub" id="invLargestDesc">—</div>
+        </div>
+      </div>
+
+      <!-- CAGR & Rate of Return -->
+      <div class="two-col" style="margin-bottom:20px;">
+        <div class="panel stack-gap">
+          <h3>📈 Rate of Return Analysis</h3>
+          <div class="sub" style="margin-bottom:16px;">Based on your investment contributions over time</div>
+          <div id="invRateCards"></div>
+        </div>
+        <div class="panel stack-gap">
+          <h3>🏆 Performance Rating</h3>
+          <div class="sub" style="margin-bottom:16px;">How your investment behaviour compares</div>
+          <div id="invPerformanceRating"></div>
+        </div>
+      </div>
+
+      <!-- By Category -->
+      <div class="panel stack-gap" style="margin-bottom:20px;">
+        <h3>💹 By Category</h3>
+        <div class="sub" style="margin-bottom:16px;">Investment breakdown per category</div>
+        <div id="invCategoryBreakdown"></div>
+      </div>
+
+      <!-- Monthly chart -->
+      <div class="panel stack-gap" style="margin-bottom:20px;">
+        <h3>📊 Monthly Investment Chart</h3>
+        <div class="chart-wrap" style="height:300px;">
+          <canvas id="invMonthlyChart"></canvas>
+          <div id="invMonthlyChartEmpty" class="chart-empty" style="display:none;">No investment data yet.</div>
+        </div>
+      </div>
+
+      <!-- Cumulative chart -->
+      <div class="panel stack-gap">
+        <h3>📈 Cumulative Investment Growth</h3>
+        <div class="sub" style="margin-bottom:12px;">Total invested over time</div>
+        <div class="chart-wrap" style="height:300px;">
+          <canvas id="invCumulativeChart"></canvas>
+          <div id="invCumulativeChartEmpty" class="chart-empty" style="display:none;">No investment data yet.</div>
+        </div>
+      </div>
+
+    </section>
+
     <section id="charts">
 
       <!-- 1. Monthly Expenses by Category -->
@@ -3151,11 +3245,12 @@
       categories:    { title: 'Categories',     sub: 'Manage categories' },
       assets:        { title: 'Assets',         sub: 'Net worth — assets' },
       liabilities:   { title: 'Liabilities',    sub: 'Net worth — liabilities' },
-      users:         { title: 'Users',          sub: 'User management (Admin only)' }
+      users:         { title: 'Users',          sub: 'User management (Admin only)' },
+      investment:    { title: 'Investments',    sub: 'Portfolio performance & analytics' }
     };
 
     function showSection(sectionId) {
-      const sections = ['dashboard', 'transactions', 'budgets', 'goals', 'assets', 'liabilities', 'categories', 'charts', 'users'];
+      const sections = ['dashboard', 'transactions', 'budgets', 'goals', 'assets', 'liabilities', 'categories', 'charts', 'users', 'investment'];
       sections.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.style.display = 'none';
@@ -3179,6 +3274,9 @@
 
       // Users lazy-load
       if (sectionId === 'users') loadUsers();
+
+      // Investment lazy-load
+      if (sectionId === 'investment') loadAllTimeInvestments();
 
       // Close sidebar on mobile
       closeSidebar();
@@ -3823,6 +3921,281 @@
       }
     }
 
+
+    // ═══════════════════════════════════════════════
+    //  INVESTMENT ANALYTICS
+    // ═══════════════════════════════════════════════
+
+    let invMonthlyChartInst    = null;
+    let invCumulativeChartInst = null;
+    let allInvTx               = [];
+
+    async function fetchInvestmentTransactions() {
+      const res  = await authFetch(`${getApiBase()}/transactions/`);
+      const all  = await res.json();
+      // Filter investment type transactions
+      return all.filter(t => t.type === 'investment' || t.type === 'savings');
+    }
+
+    async function loadInvestments() {
+      const year  = document.getElementById('invYear').value;
+      const label = document.getElementById('invPeriodLabel');
+      label.textContent = `Showing ${year}`;
+      try {
+        allInvTx = await fetchInvestmentTransactions();
+        const filtered = allInvTx.filter(t => new Date(t.date).getFullYear() == year);
+        renderInvestmentSection(filtered, `Year ${year}`);
+      } catch(e) {
+        console.error('Investment load error:', e);
+      }
+    }
+
+    async function loadAllTimeInvestments() {
+      const label = document.getElementById('invPeriodLabel');
+      label.textContent = 'Showing all time';
+      try {
+        allInvTx = await fetchInvestmentTransactions();
+        renderInvestmentSection(allInvTx, 'All Time');
+      } catch(e) {
+        console.error('Investment load error:', e);
+      }
+    }
+
+    function renderInvestmentSection(txs, periodLabel) {
+      if (!txs || txs.length === 0) {
+        document.getElementById('invTotalInvested').textContent   = '£0.00';
+        document.getElementById('invTxCount').textContent         = '0';
+        document.getElementById('invAvgMonthly').textContent      = '£0.00';
+        document.getElementById('invLargest').textContent         = '£0.00';
+        document.getElementById('invRateCards').innerHTML         = '<div class="sub">No investment transactions found. Log transactions with type "investment" to see analytics.</div>';
+        document.getElementById('invPerformanceRating').innerHTML = '';
+        document.getElementById('invCategoryBreakdown').innerHTML = '';
+        return;
+      }
+
+      // Sort by date
+      txs.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      const totalInvested = txs.reduce((s, t) => s + parseFloat(t.amount), 0);
+      const txCount       = txs.length;
+      const largest       = txs.reduce((m, t) => parseFloat(t.amount) > parseFloat(m.amount) ? t : m, txs[0]);
+
+      // Date range
+      const firstDate = new Date(txs[0].date);
+      const lastDate  = new Date(txs[txs.length - 1].date);
+      const monthsDiff = Math.max(1,
+        (lastDate.getFullYear() - firstDate.getFullYear()) * 12 +
+        (lastDate.getMonth() - firstDate.getMonth()) + 1
+      );
+      const avgMonthly = totalInvested / monthsDiff;
+
+      // CAGR calculation (assumes 7% avg market return on contributions)
+      const yearsInvested = monthsDiff / 12;
+      // Simple future value estimate at various return rates
+      function futureValue(annualRate) {
+        // For regular monthly contributions: FV = PMT * [((1+r)^n - 1) / r]
+        const r = annualRate / 12;
+        const n = monthsDiff;
+        if (r === 0) return totalInvested;
+        return avgMonthly * ((Math.pow(1 + r, n) - 1) / r);
+      }
+
+      const fv_low      = futureValue(0.04);  // 4% conservative
+      const fv_moderate = futureValue(0.07);  // 7% moderate
+      const fv_high     = futureValue(0.10);  // 10% growth
+
+      // Rate of return on total contributed
+      const ror_low      = ((fv_low      / totalInvested) - 1) * 100;
+      const ror_moderate = ((fv_moderate / totalInvested) - 1) * 100;
+      const ror_high     = ((fv_high     / totalInvested) - 1) * 100;
+
+      // CAGR
+      function cagr(fv, pv, years) {
+        if (years < 0.1 || pv <= 0) return 0;
+        return (Math.pow(fv / pv, 1 / years) - 1) * 100;
+      }
+
+      const cagr_low      = cagr(fv_low,      totalInvested, yearsInvested);
+      const cagr_moderate = cagr(fv_moderate, totalInvested, yearsInvested);
+      const cagr_high     = cagr(fv_high,     totalInvested, yearsInvested);
+
+      // Update summary cards
+      document.getElementById('invTotalInvested').textContent = currency(totalInvested);
+      document.getElementById('invTxCount').textContent       = txCount;
+      document.getElementById('invDateRange').textContent     = `${firstDate.toLocaleDateString('en-GB', {month:'short',year:'numeric'})} — ${lastDate.toLocaleDateString('en-GB', {month:'short',year:'numeric'})}`;
+      document.getElementById('invAvgMonthly').textContent    = currency(avgMonthly);
+      document.getElementById('invLargest').textContent       = currency(parseFloat(largest.amount));
+      document.getElementById('invLargestDesc').textContent   = `${largest.category} · ${largest.date}`;
+
+      // Rate of return cards
+      const rateScenarios = [
+        { label: 'Conservative',  rate: '4%',  fv: fv_low,      ror: ror_low,      cagr: cagr_low,      color: '#22c55e',  icon: '🟢', rating: 'Low Risk' },
+        { label: 'Moderate',      rate: '7%',  fv: fv_moderate, ror: ror_moderate, cagr: cagr_moderate, color: '#3b9eff',  icon: '🔵', rating: 'Balanced' },
+        { label: 'Growth',        rate: '10%', fv: fv_high,     ror: ror_high,     cagr: cagr_high,     color: '#f59e0b',  icon: '🟡', rating: 'Higher Risk' },
+      ];
+
+      document.getElementById('invRateCards').innerHTML = rateScenarios.map(s => `
+        <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.07); border-radius:10px; padding:14px 16px; margin-bottom:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <div>
+              <span style="font-weight:700; font-size:15px;">${s.icon} ${s.label}</span>
+              <span style="font-size:12px; color:var(--muted); margin-left:8px;">${s.rating} · ${s.rate} annual return</span>
+            </div>
+            <span style="font-size:18px; font-weight:700; color:${s.color};">${currency(s.fv)}</span>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
+            <div style="text-align:center; background:rgba(255,255,255,0.03); border-radius:8px; padding:8px;">
+              <div style="font-size:10px; color:var(--muted); margin-bottom:3px;">PROJECTED VALUE</div>
+              <div style="font-weight:600; color:${s.color};">${currency(s.fv)}</div>
+            </div>
+            <div style="text-align:center; background:rgba(255,255,255,0.03); border-radius:8px; padding:8px;">
+              <div style="font-size:10px; color:var(--muted); margin-bottom:3px;">RATE OF RETURN</div>
+              <div style="font-weight:600; color:${s.color};">+${s.ror.toFixed(1)}%</div>
+            </div>
+            <div style="text-align:center; background:rgba(255,255,255,0.03); border-radius:8px; padding:8px;">
+              <div style="font-size:10px; color:var(--muted); margin-bottom:3px;">CAGR</div>
+              <div style="font-weight:600; color:${s.color};">${s.cagr.toFixed(2)}%</div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      // Performance rating based on consistency and amount
+      const consistencyScore = Math.min(100, (txCount / monthsDiff) * 100); // How often they invest
+      const amountScore      = Math.min(100, (avgMonthly / 500) * 100);     // £500/month = 100%
+      const overallScore     = (consistencyScore * 0.5 + amountScore * 0.5);
+
+      let perfLabel, perfColor, perfIcon, perfDesc;
+      if (overallScore >= 80)      { perfLabel = 'Excellent';  perfColor = '#22c55e'; perfIcon = '🏆'; perfDesc = 'You invest consistently and at a strong level. Keep it up!'; }
+      else if (overallScore >= 60) { perfLabel = 'Good';       perfColor = '#3b9eff'; perfIcon = '✅'; perfDesc = 'Solid investment behaviour. Consider increasing monthly contributions.'; }
+      else if (overallScore >= 40) { perfLabel = 'Moderate';   perfColor = '#f59e0b'; perfIcon = '📈'; perfDesc = 'You're investing but there's room to be more consistent.'; }
+      else                         { perfLabel = 'Developing'; perfColor = '#ef4444'; perfIcon = '🌱'; perfDesc = 'Early stage investor. Try to invest a fixed amount every month.'; }
+
+      document.getElementById('invPerformanceRating').innerHTML = `
+        <div style="text-align:center; padding:20px 0;">
+          <div style="font-size:48px; margin-bottom:8px;">${perfIcon}</div>
+          <div style="font-size:28px; font-weight:800; color:${perfColor}; margin-bottom:8px;">${perfLabel}</div>
+          <div style="font-size:13px; color:var(--muted); margin-bottom:20px; line-height:1.6;">${perfDesc}</div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          <div style="background:rgba(255,255,255,0.03); border-radius:10px; padding:12px; text-align:center;">
+            <div style="font-size:10px; color:var(--muted); margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px;">Consistency</div>
+            <div style="font-size:20px; font-weight:700; color:${consistencyScore >= 70 ? '#22c55e' : consistencyScore >= 40 ? '#f59e0b' : '#ef4444'};">${consistencyScore.toFixed(0)}%</div>
+            <div style="font-size:11px; color:var(--muted);">${txCount} investment${txCount !== 1 ? 's' : ''} over ${monthsDiff} months</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.03); border-radius:10px; padding:12px; text-align:center;">
+            <div style="font-size:10px; color:var(--muted); margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px;">Amount Score</div>
+            <div style="font-size:20px; font-weight:700; color:${amountScore >= 70 ? '#22c55e' : amountScore >= 40 ? '#f59e0b' : '#ef4444'};">${amountScore.toFixed(0)}%</div>
+            <div style="font-size:11px; color:var(--muted);">${currency(avgMonthly)}/month avg</div>
+          </div>
+        </div>
+      `;
+
+      // By category breakdown
+      const byCategory = {};
+      txs.forEach(t => {
+        const cat = t.category || 'Other';
+        if (!byCategory[cat]) byCategory[cat] = { total: 0, count: 0 };
+        byCategory[cat].total += parseFloat(t.amount);
+        byCategory[cat].count++;
+      });
+
+      const catEntries = Object.entries(byCategory).sort((a, b) => b[1].total - a[1].total);
+      document.getElementById('invCategoryBreakdown').innerHTML = catEntries.map(([cat, data]) => {
+        const pct = (data.total / totalInvested) * 100;
+        return `
+          <div style="margin-bottom:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <div>
+                <strong style="text-transform:capitalize;">${cat}</strong>
+                <span class="sub" style="margin-left:8px;">${data.count} transaction${data.count !== 1 ? 's' : ''}</span>
+              </div>
+              <div style="text-align:right;">
+                <strong>${currency(data.total)}</strong>
+                <span class="sub" style="margin-left:6px;">${pct.toFixed(1)}%</span>
+              </div>
+            </div>
+            <div style="background:rgba(255,255,255,0.06); border-radius:100px; height:8px;">
+              <div style="height:100%; width:${pct}%; background:linear-gradient(135deg,#3b9eff,#7c3aed); border-radius:100px;"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Monthly chart
+      const monthlyMap = {};
+      txs.forEach(t => {
+        const key = t.date.substring(0, 7); // YYYY-MM
+        monthlyMap[key] = (monthlyMap[key] || 0) + parseFloat(t.amount);
+      });
+      const monthlyLabels = Object.keys(monthlyMap).sort();
+      const monthlyValues = monthlyLabels.map(k => monthlyMap[k]);
+
+      if (invMonthlyChartInst) { invMonthlyChartInst.destroy(); invMonthlyChartInst = null; }
+      const ctx1 = document.getElementById('invMonthlyChart').getContext('2d');
+      invMonthlyChartInst = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+          labels: monthlyLabels,
+          datasets: [{
+            label: 'Monthly Investment',
+            data: monthlyValues,
+            backgroundColor: 'rgba(59,158,255,0.6)',
+            borderColor: '#3b9eff',
+            borderWidth: 1,
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: '#94a3b8' } },
+            tooltip: { callbacks: { label: c => ` £${c.parsed.y.toLocaleString('en-GB', {minimumFractionDigits:2})}` } }
+          },
+          scales: {
+            x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+            y: { ticks: { color: '#94a3b8', callback: v => '£' + v.toLocaleString() }, grid: { color: 'rgba(255,255,255,0.05)' } }
+          }
+        }
+      });
+
+      // Cumulative chart
+      let cumulative = 0;
+      const cumulativeValues = monthlyValues.map(v => { cumulative += v; return cumulative; });
+
+      if (invCumulativeChartInst) { invCumulativeChartInst.destroy(); invCumulativeChartInst = null; }
+      const ctx2 = document.getElementById('invCumulativeChart').getContext('2d');
+      invCumulativeChartInst = new Chart(ctx2, {
+        type: 'line',
+        data: {
+          labels: monthlyLabels,
+          datasets: [{
+            label: 'Total Invested',
+            data: cumulativeValues,
+            borderColor: '#7c3aed',
+            backgroundColor: 'rgba(124,58,237,0.1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4,
+            pointRadius: 4,
+            pointBackgroundColor: '#7c3aed'
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: '#94a3b8' } },
+            tooltip: { callbacks: { label: c => ` Total: £${c.parsed.y.toLocaleString('en-GB', {minimumFractionDigits:2})}` } }
+          },
+          scales: {
+            x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+            y: { ticks: { color: '#94a3b8', callback: v => '£' + v.toLocaleString() }, grid: { color: 'rgba(255,255,255,0.05)' } }
+          }
+        }
+      });
+    }
+
+    // Auto-load investments when section is opened
     // Set dashboard filter to current month/year on load
     (function() {
       const now = new Date();
