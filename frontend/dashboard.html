@@ -2050,6 +2050,15 @@
       errorBox.style.display = 'none';
       errorBox.textContent = '';
 
+      // Show loading state on cards
+      ['incomeValue','expenseValue','savingsValue','networthValue','scoreValue'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = '<span style="opacity:0.3; font-size:14px;">Loading...</span>';
+      });
+
+      const periodEl = document.getElementById('periodText');
+      if (periodEl) periodEl.textContent = 'Fetching data...';
+
       try {
         const url = getDashboardUrl();
         const response = await authFetch(url);
@@ -2057,8 +2066,16 @@
         const data = await response.json();
         renderDashboard(data);
       } catch (error) {
-        errorBox.style.display = 'block';
-        errorBox.textContent = `Could not load dashboard data. ${error.message}. If you opened this file directly in the browser, add CORS to FastAPI or serve the frontend through a local web server.`;
+        // Check if it is a cold start issue
+        const isColdStart = error.message.includes('Failed to fetch') || error.message.includes('NetworkError');
+        if (isColdStart) {
+          errorBox.style.display = 'block';
+          errorBox.innerHTML = `⏳ <strong>Server is waking up</strong> — Render free tier sleeps after inactivity. Please wait 20-30 seconds and click <strong>Refresh</strong>.`;
+          if (periodEl) periodEl.textContent = 'Server waking up...';
+        } else {
+          errorBox.style.display = 'block';
+          errorBox.textContent = `Could not load dashboard data. ${error.message}. If you opened this file directly in the browser, add CORS to FastAPI or serve the frontend through a local web server.`;
+        }
       }
     }
 
