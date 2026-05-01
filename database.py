@@ -1,7 +1,5 @@
-from sqlalchemy import create_engine, text
 import os
-
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./finance.db")
@@ -31,24 +29,76 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
 def run_migrations():
     """Add missing columns to existing tables"""
     with engine.connect() as conn:
-        # Add user_id to monthly_plans if not exists
+
+        # ── monthly_plans / yearly_plans user_id ──
         conn.execute(text("""
-            ALTER TABLE monthly_plans 
+            ALTER TABLE monthly_plans
             ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id)
         """))
-        # Add user_id to yearly_plans if not exists
         conn.execute(text("""
-            ALTER TABLE yearly_plans 
+            ALTER TABLE yearly_plans
             ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id)
         """))
-        # Set existing records to user id 1
         conn.execute(text("""
             UPDATE monthly_plans SET user_id = 1 WHERE user_id IS NULL
         """))
         conn.execute(text("""
             UPDATE yearly_plans SET user_id = 1 WHERE user_id IS NULL
         """))
+
+        # ── investments table new columns ──────────
+        conn.execute(text("""
+            ALTER TABLE investments
+            ADD COLUMN IF NOT EXISTS start_date DATE
+        """))
+        conn.execute(text("""
+            ALTER TABLE investments
+            ADD COLUMN IF NOT EXISTS total_invested FLOAT DEFAULT 0
+        """))
+        conn.execute(text("""
+            ALTER TABLE investments
+            ADD COLUMN IF NOT EXISTS current_value FLOAT DEFAULT 0
+        """))
+        conn.execute(text("""
+            ALTER TABLE investments
+            ADD COLUMN IF NOT EXISTS notes VARCHAR
+        """))
+
+        # Set start_date for any existing rows missing it
+        conn.execute(text("""
+            UPDATE investments
+            SET start_date = '2026-01-01'
+            WHERE start_date IS NULL
+        """))
+
+        # Remove old columns that no longer exist in model
+        # (month, year, amount_invested from old schema)
+        for old_col in ['month', 'year', 'amount_invested']:
+            try:
+                conn.execute(text(f"""
+                    ALTER TABLE investments
+                    DROP COLUMN IF EXISTS {old_col}
+                """))
+            except Exception:
+                pass
+
+        # ── investment_history table ───────────────
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS investment_history (
+                id SERIAL PRIMARY KEY,
+                investment_id INTEGER REFERENCES investments(id),
+                user_id INTEGER REFERENCES users(id),
+                month INTEGER NOT NULL,
+                year INTEGER NOT NULL,
+                amount_added FLOAT DEFAULT 0,
+                current_value FLOAT NOT NULL,
+                note VARCHAR
+            )
+        """))
+
         conn.commit()
