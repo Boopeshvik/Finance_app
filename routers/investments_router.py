@@ -276,7 +276,7 @@ def migrate_old_entries(
 
         # Use first entry as the master
         master = entries[0]
-        master.total_invested = sum(e.total_invested for e in entries if hasattr(e, 'total_invested') else e.amount_invested for e in entries)
+        master.total_invested = sum(getattr(e, 'total_invested', 0) for e in entries)
         master.current_value  = entries[-1].current_value
         master.start_date     = date_type(entries[0].year, entries[0].month, 1)
 
