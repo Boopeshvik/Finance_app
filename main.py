@@ -2,11 +2,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from database import Base, engine
-
-# With other imports at top
-from routers.bank_statement import router as bank_statement_router
-
+from database import Base, engine, run_migrations
 
 from routers.auth import router as auth_router
 from routers.transactions import router as transactions_router
@@ -20,9 +16,9 @@ from routers.dashboard import router as dashboard_router
 from routers.budgets import router as budgets_router
 from routers.categories import router as categories_router
 from routers.ai import router as ai_router
+from routers.bank_statement import router as bank_statement_router
 from routers.investments_router import router as investments_router
 
-from models.investment import Investment, InvestmentHistory
 from models.user import User
 from models.transaction import Transaction
 from models.monthly_plan import MonthlyPlan
@@ -32,10 +28,9 @@ from models.liability import Liability
 from models.goal import Goal
 from models.budget import Budget
 from models.category import Category
+from models.investment import Investment, InvestmentHistory
 
 Base.metadata.create_all(bind=engine)
-
-from database import run_migrations
 run_migrations()
 
 app = FastAPI(title="Personal Finance Tracker API")
