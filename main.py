@@ -21,7 +21,7 @@ from routers.budgets import router as budgets_router
 from routers.categories import router as categories_router
 from routers.ai import router as ai_router
 from routers.investments_router import router as investments_router
-from models.investment import Investment
+from models.investment import Investment, InvestmentHistory
 
 from models.user import User
 from models.transaction import Transaction

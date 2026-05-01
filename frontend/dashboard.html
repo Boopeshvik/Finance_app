@@ -1551,58 +1551,6 @@
          ════════════════════════════════════════════ -->
     <section id="investment">
 
-      <!-- Entry Form -->
-      <div class="panel stack-gap" style="margin-bottom:20px;">
-        <h3 id="invFormTitle">➕ Add Investment Entry</h3>
-        <div class="sub" style="margin-bottom:16px;">Log a monthly contribution and its current value for any investment.</div>
-        <div class="two-col">
-          <div>
-            <input type="hidden" id="invEntryId" />
-            <div class="two-col" style="margin-bottom:12px;">
-              <div style="position:relative;">
-                <input id="invName" type="text" placeholder="Investment name e.g. Vanguard" required autocomplete="off"
-                  oninput="filterInvNameSuggestions(this.value)"
-                  onfocus="filterInvNameSuggestions(this.value)"
-                  onkeydown="handleInvNameKey(event)" />
-                <div id="invNameDropdown" style="
-                  display:none; position:absolute; top:100%; left:0; right:0; z-index:999;
-                  background:#0f1b2d; border:1px solid rgba(59,158,255,0.4); border-radius:0 0 8px 8px;
-                  max-height:200px; overflow-y:auto; box-shadow:0 8px 24px rgba(0,0,0,0.4);">
-                </div>
-              </div>
-              <div class="two-col" style="gap:8px;">
-                <select id="invEntryMonth" style="padding:11px 12px; border-radius:8px; background:var(--panel-2); border:1px solid var(--border); color:var(--text); font-size:14px;">
-                  <option value="1">Jan</option><option value="2">Feb</option><option value="3">Mar</option>
-                  <option value="4">Apr</option><option value="5">May</option><option value="6">Jun</option>
-                  <option value="7">Jul</option><option value="8">Aug</option><option value="9">Sep</option>
-                  <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
-                </select>
-                <input id="invEntryYear" type="number" placeholder="Year" value="2026" min="2000" max="2100" />
-              </div>
-            </div>
-            <div class="two-col" style="margin-bottom:12px;">
-              <input id="invAmountInvested" type="number" placeholder="Amount Invested (£)" step="0.01" required />
-              <input id="invCurrentValue" type="number" placeholder="Current Value (£)" step="0.01" required />
-            </div>
-            <div style="margin-bottom:12px;">
-              <input id="invNotes" type="text" placeholder="Notes (optional)" />
-            </div>
-            <div class="actions">
-              <button type="button" id="invSaveBtn" onclick="saveInvestment()">Save Entry</button>
-              <button type="button" id="invClearBtn" class="secondary-btn" onclick="resetInvForm()">Clear</button>
-              <button type="button" onclick="loadInvestmentData()">Reload Table</button>
-            </div>
-            <div id="invFormMsg" class="sub" style="margin-top:10px;"></div>
-          </div>
-          <div>
-            <div class="sub" style="margin-bottom:12px;">Entry details</div>
-            <div class="stat-row"><span>Mode</span><strong id="invModeText">Create</strong></div>
-            <div class="stat-row"><span>Selected ID</span><strong id="invSelectedId">—</strong></div>
-            <div class="stat-row"><span>Gain/Loss preview</span><strong id="invGainPreview">—</strong></div>
-          </div>
-        </div>
-      </div>
-
       <!-- Portfolio Summary Cards -->
       <div class="grid-cards" style="margin-bottom:20px;">
         <div class="card">
@@ -1627,62 +1575,151 @@
         </div>
       </div>
 
-      <!-- Per Investment Analytics -->
-      <div class="panel stack-gap" style="margin-bottom:20px;">
-        <h3>📊 Per Investment Performance</h3>
-        <div id="invPerInvestment"></div>
+      <!-- Two col: investments list + add/update form -->
+      <div class="two-col" style="margin-bottom:20px; align-items:start;">
+
+        <!-- LEFT: Investment list -->
+        <div class="panel stack-gap">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h3 style="margin:0;">💹 My Investments</h3>
+            <button onclick="openAddInvestmentModal()" style="padding:7px 16px; background:var(--accent); border:none; border-radius:8px; color:#fff; font-size:13px; font-weight:600; cursor:pointer;">+ Add New</button>
+          </div>
+          <div id="invCardList" style="margin-top:4px;">
+            <div class="sub">Loading...</div>
+          </div>
+        </div>
+
+        <!-- RIGHT: Monthly update form -->
+        <div class="panel stack-gap" id="invUpdatePanel">
+          <h3 id="invUpdateTitle" style="margin:0 0 4px;">📅 Add Monthly Update</h3>
+          <div class="sub" style="margin-bottom:16px;" id="invUpdateSubtitle">Select an investment to add a monthly update</div>
+
+          <input type="hidden" id="invUpdateInvId" />
+
+          <div class="two-col" style="margin-bottom:12px; gap:8px;">
+            <div>
+              <label style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px;">Month</label>
+              <select id="invUpdateMonth" style="width:100%; padding:10px 12px; border-radius:8px; background:var(--panel-2); border:1px solid var(--border); color:var(--text); font-size:14px; margin-top:4px;">
+                <option value="1">January</option><option value="2">February</option><option value="3">March</option>
+                <option value="4">April</option><option value="5">May</option><option value="6">June</option>
+                <option value="7">July</option><option value="8">August</option><option value="9">September</option>
+                <option value="10">October</option><option value="11">November</option><option value="12">December</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px;">Year</label>
+              <input id="invUpdateYear" type="number" value="2026" min="2000" max="2100" style="margin-top:4px;" />
+            </div>
+          </div>
+
+          <div style="margin-bottom:12px;">
+            <label style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px;">Amount Added This Month (£)</label>
+            <input id="invUpdateAmount" type="number" placeholder="0.00 — enter 0 if no new contribution" step="0.01" style="margin-top:4px;" oninput="updateInvPreview()" />
+          </div>
+
+          <div style="margin-bottom:12px;">
+            <label style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px;">Current Value as of This Month (£)</label>
+            <input id="invUpdateValue" type="number" placeholder="e.g. 21658" step="0.01" style="margin-top:4px;" oninput="updateInvPreview()" />
+          </div>
+
+          <div style="margin-bottom:16px;">
+            <label style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px;">Note (optional)</label>
+            <input id="invUpdateNote" type="text" placeholder="e.g. lump sum added" style="margin-top:4px;" />
+          </div>
+
+          <!-- Preview -->
+          <div id="invUpdatePreview" style="background:rgba(255,255,255,0.03); border-radius:8px; padding:12px; margin-bottom:16px; display:none;">
+            <div style="font-size:12px; color:var(--muted); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">Preview</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+              <div><span class="sub">Gain/Loss:</span> <strong id="prevGainLoss">—</strong></div>
+              <div><span class="sub">Return %:</span> <strong id="prevRoR">—</strong></div>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button onclick="saveMonthlyUpdate()" style="flex:1; padding:11px; background:linear-gradient(135deg,#3b9eff,#2563eb); border:none; border-radius:8px; color:#fff; font-weight:600; cursor:pointer;">Save Update</button>
+            <button onclick="resetInvUpdateForm()" style="padding:11px 16px; background:rgba(255,255,255,0.06); border:1px solid var(--border); border-radius:8px; color:var(--muted); cursor:pointer;">Clear</button>
+          </div>
+          <div id="invUpdateMsg" style="font-size:13px; margin-top:10px; min-height:18px;"></div>
+        </div>
       </div>
 
-      <!-- Charts row -->
+      <!-- Per Investment Performance -->
+      <div class="panel stack-gap" style="margin-bottom:20px;">
+        <h3>📊 Performance by Investment</h3>
+        <div id="invPerInvestment"><div class="sub">Loading...</div></div>
+      </div>
+
+      <!-- Charts -->
       <div class="two-col" style="margin-bottom:20px;">
         <div class="panel stack-gap">
           <h3>💰 Invested vs Current Value</h3>
-          <div class="chart-wrap" style="height:280px;">
-            <canvas id="invCompareChart"></canvas>
-          </div>
+          <div class="chart-wrap" style="height:280px;"><canvas id="invCompareChart"></canvas></div>
         </div>
         <div class="panel stack-gap">
           <h3>📈 Return % by Investment</h3>
-          <div class="chart-wrap" style="height:280px;">
-            <canvas id="invReturnChart"></canvas>
-          </div>
+          <div class="chart-wrap" style="height:280px;"><canvas id="invReturnChart"></canvas></div>
         </div>
       </div>
 
-      <!-- Monthly contributions chart -->
-      <div class="panel stack-gap" style="margin-bottom:20px;">
-        <h3>📅 Monthly Contributions Over Time</h3>
-        <div class="chart-wrap" style="height:280px;">
-          <canvas id="invTimelineChart"></canvas>
+      <!-- History panel (shown when investment selected) -->
+      <div class="panel stack-gap" id="invHistoryPanel" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <h3 id="invHistoryTitle" style="margin:0;">📅 Monthly History</h3>
+          <button onclick="closeInvHistory()" style="padding:5px 12px; background:rgba(255,255,255,0.06); border:1px solid var(--border); border-radius:6px; color:var(--muted); cursor:pointer;">Close</button>
         </div>
-      </div>
-
-      <!-- Entries Table -->
-      <div class="panel stack-gap">
-        <h3>📋 All Investment Entries</h3>
-        <div style="overflow:auto;">
+        <div style="overflow:auto; margin-top:8px;">
           <table>
             <thead>
               <tr>
-                <th>ID</th><th>Name</th><th>Month/Year</th>
-                <th>Invested</th><th>Current Value</th>
-                <th>Gain/Loss</th><th>Return %</th><th>Notes</th><th>Actions</th>
+                <th>Month/Year</th><th>Added</th><th>Value Snapshot</th>
+                <th>Gain vs Total</th><th>Return %</th><th>Note</th><th>Actions</th>
               </tr>
             </thead>
-            <tbody id="invTableBody">
-              <tr><td colspan="9" class="sub">Loading...</td></tr>
-            </tbody>
+            <tbody id="invHistoryBody"></tbody>
           </table>
         </div>
       </div>
 
     </section>
 
+    <!-- ADD INVESTMENT MODAL -->
+    <div id="addInvModal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.75); backdrop-filter:blur(4px); align-items:center; justify-content:center;">
+      <div style="background:#0f1b2d; border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:32px; width:100%; max-width:460px; margin:20px; box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+        <h3 style="margin:0 0 6px;">➕ Add New Investment</h3>
+        <div class="sub" style="margin-bottom:24px;">Create a new investment to track</div>
 
+        <div style="margin-bottom:14px;">
+          <label style="font-size:12px; color:var(--muted); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">Investment Name</label>
+          <input id="newInvName" type="text" placeholder="e.g. Mars Pension, Vanguard ISA, Trading 212" style="width:100%;" />
+        </div>
+        <div style="margin-bottom:14px;">
+          <label style="font-size:12px; color:var(--muted); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">Start Date (when you first invested)</label>
+          <input id="newInvStartDate" type="date" style="width:100%;" />
+        </div>
+        <div class="two-col" style="margin-bottom:14px; gap:10px;">
+          <div>
+            <label style="font-size:12px; color:var(--muted); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">Total Invested So Far (£)</label>
+            <input id="newInvTotalInvested" type="number" placeholder="0.00" step="0.01" style="width:100%;" />
+          </div>
+          <div>
+            <label style="font-size:12px; color:var(--muted); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">Current Value (£)</label>
+            <input id="newInvCurrentValue" type="number" placeholder="0.00" step="0.01" style="width:100%;" />
+          </div>
+        </div>
+        <div style="margin-bottom:20px;">
+          <label style="font-size:12px; color:var(--muted); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">Notes (optional)</label>
+          <input id="newInvNotes" type="text" placeholder="e.g. workplace pension, S&S ISA" style="width:100%;" />
+        </div>
 
-    <!-- ════════════════════════════════════════════
-         CHARTS SECTION
-         ════════════════════════════════════════════ -->
+        <div id="addInvModalMsg" style="font-size:13px; margin-bottom:12px; min-height:18px;"></div>
+
+        <div style="display:flex; gap:10px;">
+          <button onclick="saveNewInvestment()" style="flex:1; padding:13px; background:linear-gradient(135deg,#3b9eff,#2563eb); border:none; border-radius:10px; color:#fff; font-size:14px; font-weight:600; cursor:pointer;">Create Investment</button>
+          <button onclick="closeAddInvestmentModal()" style="padding:13px 20px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:10px; color:var(--muted); cursor:pointer;">Cancel</button>
+        </div>
+      </div>
+    </div>
 
     <section id="charts">
 
@@ -3995,429 +4032,393 @@
 
 
 
+
     // ═══════════════════════════════════════════════
-    //  INVESTMENT PORTFOLIO TRACKER
+    //  INVESTMENT PORTFOLIO TRACKER v2
     // ═══════════════════════════════════════════════
 
     let invCompareChartInst  = null;
     let invReturnChartInst   = null;
-    let invTimelineChartInst = null;
-    let allInvestmentData    = [];
+    let allInvestmentsData   = [];
 
-    const MONTH_LABELS_INV = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const MONTH_NAMES_INV = ['','January','February','March','April','May','June',
+                              'July','August','September','October','November','December'];
+    const MONTH_SHORT_INV = ['','Jan','Feb','Mar','Apr','May','Jun',
+                              'Jul','Aug','Sep','Oct','Nov','Dec'];
 
     function getInvestmentsEndpoint() { return `${getApiBase()}/investments/`; }
 
-    // Live gain preview as user types
-    function updateGainPreview() {
-      const invested = parseFloat(document.getElementById('invAmountInvested').value) || 0;
-      const current  = parseFloat(document.getElementById('invCurrentValue').value) || 0;
-      const preview  = document.getElementById('invGainPreview');
-      if (invested > 0 && current > 0) {
-        const gain = current - invested;
-        const pct  = (gain / invested) * 100;
-        preview.textContent = `${gain >= 0 ? '+' : ''}${currency(gain)} (${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%)`;
-        preview.style.color = gain >= 0 ? 'var(--good)' : 'var(--bad)';
-      } else {
-        preview.textContent = '—';
-        preview.style.color = 'var(--muted)';
-      }
+    // ── Modal: Add new investment ─────────────────
+    function openAddInvestmentModal() {
+      document.getElementById('newInvName').value          = '';
+      document.getElementById('newInvStartDate').value     = '';
+      document.getElementById('newInvTotalInvested').value = '';
+      document.getElementById('newInvCurrentValue').value  = '';
+      document.getElementById('newInvNotes').value         = '';
+      document.getElementById('addInvModalMsg').textContent = '';
+      // Default start date to today
+      document.getElementById('newInvStartDate').value = new Date().toISOString().split('T')[0];
+      document.getElementById('addInvModal').style.display = 'flex';
     }
 
-    document.getElementById('invAmountInvested').addEventListener('input', updateGainPreview);
-    document.getElementById('invCurrentValue').addEventListener('input', updateGainPreview);
-
-    // Set default month to current
-    (function() {
-      const now = new Date();
-      const m = document.getElementById('invEntryMonth');
-      const y = document.getElementById('invEntryYear');
-      if (m) m.value = String(now.getMonth() + 1);
-      if (y) y.value = String(now.getFullYear());
-    })();
-
-    function resetInvForm() {
-      document.getElementById('invEntryId').value       = '';
-      document.getElementById('invName').value          = '';
-      document.getElementById('invAmountInvested').value = '';
-      document.getElementById('invCurrentValue').value  = '';
-      document.getElementById('invNotes').value         = '';
-      document.getElementById('invFormMsg').textContent  = '';
-      document.getElementById('invModeText').textContent = 'Create';
-      document.getElementById('invSelectedId').textContent = '—';
-      document.getElementById('invGainPreview').textContent = '—';
-      document.getElementById('invFormTitle').textContent = '➕ Add Investment Entry';
-      document.getElementById('invSaveBtn').textContent  = 'Save Entry';
-      const now = new Date();
-      document.getElementById('invEntryMonth').value = String(now.getMonth() + 1);
-      document.getElementById('invEntryYear').value  = String(now.getFullYear());
+    function closeAddInvestmentModal() {
+      document.getElementById('addInvModal').style.display = 'none';
     }
 
-    function editInvestment(id) {
-      const item = allInvestmentData.find(i => i.id === id);
-      if (!item) return;
-      document.getElementById('invEntryId').value        = item.id;
-      document.getElementById('invName').value           = item.name;
-      document.getElementById('invEntryMonth').value     = item.month;
-      document.getElementById('invEntryYear').value      = item.year;
-      document.getElementById('invAmountInvested').value = item.amount_invested;
-      document.getElementById('invCurrentValue').value   = item.current_value;
-      document.getElementById('invNotes').value          = item.notes || '';
-      document.getElementById('invModeText').textContent = 'Edit';
-      document.getElementById('invSelectedId').textContent = id;
-      document.getElementById('invFormTitle').textContent = '✏️ Edit Investment Entry';
-      document.getElementById('invSaveBtn').textContent  = 'Update Entry';
-      updateGainPreview();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    document.getElementById('addInvModal').addEventListener('click', function(e) {
+      if (e.target === this) closeAddInvestmentModal();
+    });
 
-    async function deleteInvestment(id) {
-      if (!confirm('Delete this investment entry?')) return;
-      try {
-        const res = await authFetch(`${getInvestmentsEndpoint()}${id}`, { method: 'DELETE' });
-        if (res.ok) { await loadInvestmentData(); }
-        else { alert('Delete failed'); }
-      } catch(e) { alert('Error: ' + e.message); }
-    }
+    async function saveNewInvestment() {
+      const name       = document.getElementById('newInvName').value.trim();
+      const startDate  = document.getElementById('newInvStartDate').value;
+      const totalInv   = parseFloat(document.getElementById('newInvTotalInvested').value);
+      const currVal    = parseFloat(document.getElementById('newInvCurrentValue').value);
+      const notes      = document.getElementById('newInvNotes').value.trim();
+      const msg        = document.getElementById('addInvModalMsg');
 
-    async function saveInvestment() {
-      const id      = document.getElementById('invEntryId').value;
-      const name    = document.getElementById('invName').value.trim();
-      const month   = parseInt(document.getElementById('invEntryMonth').value);
-      const year    = parseInt(document.getElementById('invEntryYear').value);
-      const invested = parseFloat(document.getElementById('invAmountInvested').value);
-      const current  = parseFloat(document.getElementById('invCurrentValue').value);
-      const notes   = document.getElementById('invNotes').value.trim();
-      const msg     = document.getElementById('invFormMsg');
-
-      if (!name || !month || !year || isNaN(invested) || isNaN(current)) {
+      if (!name || !startDate || isNaN(totalInv) || isNaN(currVal)) {
         msg.style.color = 'var(--warn)';
         msg.textContent = 'Please fill in all required fields.';
         return;
       }
 
-      const body = { name, month, year, amount_invested: invested, current_value: current, notes: notes || null };
-      const url    = id ? `${getInvestmentsEndpoint()}${id}` : getInvestmentsEndpoint();
-      const method = id ? 'PUT' : 'POST';
+      try {
+        const res  = await authFetch(getInvestmentsEndpoint(), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, start_date: startDate, total_invested: totalInv, current_value: currVal, notes: notes || null })
+        });
+        const data = await res.json();
+        if (!res.ok) { msg.style.color = 'var(--bad)'; msg.textContent = data.detail || 'Save failed'; return; }
+        closeAddInvestmentModal();
+        await loadInvestmentData();
+      } catch(e) { msg.style.color = 'var(--bad)'; msg.textContent = e.message; }
+    }
+
+    // ── Monthly update form ───────────────────────
+    function selectInvestmentForUpdate(invId, invName, totalInvested) {
+      document.getElementById('invUpdateInvId').value     = invId;
+      document.getElementById('invUpdateTitle').textContent = `📅 Add Update — ${invName}`;
+      document.getElementById('invUpdateSubtitle').textContent = `Total invested so far: ${currency(totalInvested)}`;
+      document.getElementById('invUpdateMsg').textContent  = '';
+
+      // Default to next month
+      const now = new Date();
+      document.getElementById('invUpdateMonth').value = now.getMonth() + 1;
+      document.getElementById('invUpdateYear').value  = now.getFullYear();
+      document.getElementById('invUpdateAmount').value = '';
+      document.getElementById('invUpdateValue').value  = '';
+      document.getElementById('invUpdateNote').value   = '';
+      document.getElementById('invUpdatePreview').style.display = 'none';
+
+      // Scroll to update panel
+      document.getElementById('invUpdatePanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function resetInvUpdateForm() {
+      document.getElementById('invUpdateInvId').value     = '';
+      document.getElementById('invUpdateTitle').textContent = '📅 Add Monthly Update';
+      document.getElementById('invUpdateSubtitle').textContent = 'Select an investment to add a monthly update';
+      document.getElementById('invUpdateAmount').value    = '';
+      document.getElementById('invUpdateValue').value     = '';
+      document.getElementById('invUpdateNote').value      = '';
+      document.getElementById('invUpdateMsg').textContent = '';
+      document.getElementById('invUpdatePreview').style.display = 'none';
+    }
+
+    function updateInvPreview() {
+      const invId     = document.getElementById('invUpdateInvId').value;
+      const amount    = parseFloat(document.getElementById('invUpdateAmount').value) || 0;
+      const currValue = parseFloat(document.getElementById('invUpdateValue').value) || 0;
+      const preview   = document.getElementById('invUpdatePreview');
+
+      if (!invId || currValue === 0) { preview.style.display = 'none'; return; }
+
+      const inv = allInvestmentsData.find(i => i.id == invId);
+      if (!inv) { preview.style.display = 'none'; return; }
+
+      const newTotal = inv.total_invested + amount;
+      const gain     = currValue - newTotal;
+      const ror      = newTotal > 0 ? (gain / newTotal) * 100 : 0;
+
+      document.getElementById('prevGainLoss').textContent = `${gain >= 0 ? '+' : ''}${currency(gain)}`;
+      document.getElementById('prevGainLoss').style.color  = gain >= 0 ? 'var(--good)' : 'var(--bad)';
+      document.getElementById('prevRoR').textContent      = `${ror >= 0 ? '+' : ''}${ror.toFixed(2)}%`;
+      document.getElementById('prevRoR').style.color       = ror >= 0 ? 'var(--good)' : 'var(--bad)';
+      preview.style.display = 'block';
+    }
+
+    async function saveMonthlyUpdate() {
+      const invId  = document.getElementById('invUpdateInvId').value;
+      const month  = parseInt(document.getElementById('invUpdateMonth').value);
+      const year   = parseInt(document.getElementById('invUpdateYear').value);
+      const amount = parseFloat(document.getElementById('invUpdateAmount').value) || 0;
+      const value  = parseFloat(document.getElementById('invUpdateValue').value);
+      const note   = document.getElementById('invUpdateNote').value.trim();
+      const msg    = document.getElementById('invUpdateMsg');
+
+      if (!invId) { msg.style.color = 'var(--warn)'; msg.textContent = 'Please select an investment first.'; return; }
+      if (isNaN(value) || value <= 0) { msg.style.color = 'var(--warn)'; msg.textContent = 'Please enter the current value.'; return; }
 
       try {
-        const res  = await authFetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const res  = await authFetch(`${getInvestmentsEndpoint()}${invId}/history`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ month, year, amount_added: amount, current_value: value, note: note || null })
+        });
         const data = await res.json();
         if (!res.ok) { msg.style.color = 'var(--bad)'; msg.textContent = data.detail || 'Save failed'; return; }
         msg.style.color = 'var(--good)';
-        msg.textContent = id ? '✅ Updated successfully!' : '✅ Entry saved!';
-        resetInvForm();
+        msg.textContent = `✅ ${MONTH_NAMES_INV[month]} ${year} update saved!`;
         await loadInvestmentData();
-      } catch(e) { msg.style.color = 'var(--bad)'; msg.textContent = 'Error: ' + e.message; }
+      } catch(e) { msg.style.color = 'var(--bad)'; msg.textContent = e.message; }
     }
 
-    // ── Investment name autocomplete ──────────────
-    function getUniqueInvNames() {
-      return [...new Set(allInvestmentData.map(i => i.name))].sort();
-    }
+    // ── History panel ─────────────────────────────
+    async function showInvHistory(invId, invName) {
+      const panel = document.getElementById('invHistoryPanel');
+      const title = document.getElementById('invHistoryTitle');
+      const tbody = document.getElementById('invHistoryBody');
 
-    function filterInvNameSuggestions(val) {
-      const dropdown = document.getElementById('invNameDropdown');
-      const names    = getUniqueInvNames();
-      const filtered = val.trim() === ''
-        ? names
-        : names.filter(n => n.toLowerCase().includes(val.toLowerCase()));
+      title.textContent = `📅 Monthly History — ${invName}`;
+      tbody.innerHTML = '<tr><td colspan="7" class="sub">Loading...</td></tr>';
+      panel.style.display = 'block';
+      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-      if (filtered.length === 0) {
-        dropdown.style.display = 'none';
-        return;
-      }
+      try {
+        const res  = await authFetch(`${getInvestmentsEndpoint()}${invId}/history`);
+        const data = await res.json();
 
-      dropdown.innerHTML = filtered.map((name, i) => `
-        <div
-          class="inv-name-option"
-          data-index="${i}"
-          onclick="selectInvName('${name.replace(/'/g, "\'")}')"
-          style="padding:10px 14px; cursor:pointer; font-size:14px; color:var(--text);
-                 border-bottom:1px solid rgba(255,255,255,0.05);"
-          onmouseover="this.style.background='rgba(59,158,255,0.12)'"
-          onmouseout="this.style.background=''"
-        >
-          💹 ${name}
-          <span style="font-size:11px; color:var(--muted); margin-left:8px;">
-            ${allInvestmentData.filter(i => i.name === name).length} entr${allInvestmentData.filter(i => i.name === name).length === 1 ? 'y' : 'ies'}
-          </span>
-        </div>
-      `).join('');
+        if (!data.length) {
+          tbody.innerHTML = '<tr><td colspan="7" class="sub">No history yet. Add a monthly update above.</td></tr>';
+          return;
+        }
 
-      dropdown.style.display = 'block';
-    }
+        const inv = allInvestmentsData.find(i => i.id == invId);
+        let runningTotal = 0;
 
-    function selectInvName(name) {
-      document.getElementById('invName').value = name;
-      document.getElementById('invNameDropdown').style.display = 'none';
-
-      // Auto-fill month/year with next month after last entry for this investment
-      const entries = allInvestmentData
-        .filter(i => i.name === name)
-        .sort((a, b) => a.year !== b.year ? b.year - a.year : b.month - a.month);
-
-      if (entries.length > 0) {
-        const last = entries[0];
-        let nextMonth = last.month + 1;
-        let nextYear  = last.year;
-        if (nextMonth > 12) { nextMonth = 1; nextYear++; }
-
-        document.getElementById('invEntryMonth').value = nextMonth;
-        document.getElementById('invEntryYear').value  = nextYear;
-
-        // Pre-fill current value from last entry as a starting point
-        document.getElementById('invCurrentValue').value = last.current_value;
-        updateGainPreview();
+        tbody.innerHTML = data.map(h => {
+          runningTotal += h.amount_added;
+          const gain = h.current_value - runningTotal;
+          const ror  = runningTotal > 0 ? (gain / runningTotal) * 100 : 0;
+          return `<tr>
+            <td><strong>${MONTH_SHORT_INV[h.month]} ${h.year}</strong></td>
+            <td>${h.amount_added > 0 ? '+' + currency(h.amount_added) : '—'}</td>
+            <td>${currency(h.current_value)}</td>
+            <td style="color:${gain >= 0 ? 'var(--good)' : 'var(--bad)'}; font-weight:600;">${gain >= 0 ? '+' : ''}${currency(gain)}</td>
+            <td style="color:${ror >= 0 ? 'var(--good)' : 'var(--bad)'}; font-weight:600;">${ror >= 0 ? '+' : ''}${ror.toFixed(2)}%</td>
+            <td class="sub">${h.note || '—'}</td>
+            <td>
+              <button type="button" class="danger-btn" onclick="deleteHistoryEntry(${invId}, ${h.id})" style="padding:4px 10px; font-size:12px;">Delete</button>
+            </td>
+          </tr>`;
+        }).join('');
+      } catch(e) {
+        tbody.innerHTML = `<tr><td colspan="7" class="sub" style="color:var(--bad);">Error: ${e.message}</td></tr>`;
       }
     }
 
-    function handleInvNameKey(e) {
-      const dropdown = document.getElementById('invNameDropdown');
-      const options  = dropdown.querySelectorAll('.inv-name-option');
-      const active   = dropdown.querySelector('.inv-name-active');
-      let idx        = active ? parseInt(active.dataset.index) : -1;
-
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        idx = Math.min(idx + 1, options.length - 1);
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        idx = Math.max(idx - 1, 0);
-      } else if (e.key === 'Enter' && active) {
-        e.preventDefault();
-        active.click();
-        return;
-      } else if (e.key === 'Escape') {
-        dropdown.style.display = 'none';
-        return;
-      } else {
-        return;
-      }
-
-      options.forEach(o => { o.classList.remove('inv-name-active'); o.style.background = ''; });
-      if (options[idx]) {
-        options[idx].classList.add('inv-name-active');
-        options[idx].style.background = 'rgba(59,158,255,0.12)';
-        options[idx].scrollIntoView({ block: 'nearest' });
-      }
+    function closeInvHistory() {
+      document.getElementById('invHistoryPanel').style.display = 'none';
     }
 
-    // Close dropdown when clicking outside
-    document.addEventListener('click', function(e) {
-      if (!e.target.closest('#invName') && !e.target.closest('#invNameDropdown')) {
-        const dd = document.getElementById('invNameDropdown');
-        if (dd) dd.style.display = 'none';
-      }
-    });
+    async function deleteHistoryEntry(invId, histId) {
+      if (!confirm('Delete this history entry?')) return;
+      try {
+        const res = await authFetch(`${getInvestmentsEndpoint()}${invId}/history/${histId}`, { method: 'DELETE' });
+        if (res.ok) { await loadInvestmentData(); showInvHistory(invId, ''); }
+      } catch(e) { alert('Error: ' + e.message); }
+    }
 
+    async function deleteInvestment(invId) {
+      if (!confirm('Delete this investment and ALL its history? This cannot be undone.')) return;
+      try {
+        const res = await authFetch(`${getInvestmentsEndpoint()}${invId}`, { method: 'DELETE' });
+        if (res.ok) { await loadInvestmentData(); }
+      } catch(e) { alert('Error: ' + e.message); }
+    }
+
+    // ── Load & render ─────────────────────────────
     async function loadInvestmentData() {
       try {
         const res  = await authFetch(getInvestmentsEndpoint());
         const data = await res.json();
-        allInvestmentData = data;
+        allInvestmentsData = data;
         renderInvestmentPortfolio(data);
       } catch(e) { console.error('Investment load error:', e); }
     }
 
-    function renderInvestmentPortfolio(entries) {
-      // ── Table ────────────────────────────────────
-      const tbody = document.getElementById('invTableBody');
-      if (!entries.length) {
-        tbody.innerHTML = '<tr><td colspan="9" class="sub">No investment entries yet. Add your first entry above!</td></tr>';
-        ['ptTotalInvested','ptCurrentValue','ptGainLoss','ptCAGR'].forEach(id => document.getElementById(id).textContent = '—');
-        document.getElementById('invPerInvestment').innerHTML = '<div class="sub">No data yet.</div>';
+    function calcCAGR(currentValue, totalInvested, startDateStr) {
+      if (!startDateStr || totalInvested <= 0 || currentValue <= 0) return 0;
+      const start = new Date(startDateStr);
+      const now   = new Date();
+      const years = (now - start) / (1000 * 60 * 60 * 24 * 365.25);
+      if (years < 0.08) return totalInvested > 0 ? ((currentValue - totalInvested) / totalInvested) * 100 : 0;
+      return (Math.pow(currentValue / totalInvested, 1 / years) - 1) * 100;
+    }
+
+    function getRating(ror) {
+      if (ror >= 15)  return { label: '🚀 Excellent', color: '#22c55e' };
+      if (ror >= 7)   return { label: '✅ Good',       color: '#3b9eff' };
+      if (ror >= 0)   return { label: '📈 Moderate',  color: '#f59e0b' };
+      if (ror >= -10) return { label: '⚠️ Low',        color: '#f97316' };
+      return             { label: '🔴 Loss',       color: '#ef4444' };
+    }
+
+    function renderInvestmentPortfolio(investments) {
+      if (!investments.length) {
+        document.getElementById('invCardList').innerHTML = `
+          <div style="text-align:center; padding:32px; color:var(--muted);">
+            <div style="font-size:32px; margin-bottom:8px;">💹</div>
+            <div style="font-weight:600; margin-bottom:6px;">No investments yet</div>
+            <div style="font-size:13px;">Click "+ Add New" to create your first investment</div>
+          </div>`;
+        ['ptTotalInvested','ptCurrentValue','ptGainLoss','ptCAGR'].forEach(id => {
+          document.getElementById(id).textContent = '£0.00';
+        });
+        document.getElementById('invPerInvestment').innerHTML = '<div class="sub">No investments yet.</div>';
         return;
       }
 
-      tbody.innerHTML = entries.map(e => {
-        const gain = e.current_value - e.amount_invested;
-        const ror  = e.amount_invested > 0 ? (gain / e.amount_invested) * 100 : 0;
-        return `<tr>
-          <td>${e.id}</td>
-          <td><strong>${e.name}</strong></td>
-          <td>${MONTH_LABELS_INV[e.month]} ${e.year}</td>
-          <td>${currency(e.amount_invested)}</td>
-          <td>${currency(e.current_value)}</td>
-          <td style="color:${gain >= 0 ? 'var(--good)' : 'var(--bad)'}; font-weight:600;">${gain >= 0 ? '+' : ''}${currency(gain)}</td>
-          <td style="color:${ror >= 0 ? 'var(--good)' : 'var(--bad)'}; font-weight:600;">${ror >= 0 ? '+' : ''}${ror.toFixed(2)}%</td>
-          <td class="sub">${e.notes || '—'}</td>
-          <td>
-            <div class="actions">
-              <button type="button" onclick="editInvestment(${e.id})">Edit</button>
-              <button type="button" class="danger-btn" onclick="deleteInvestment(${e.id})">Delete</button>
-            </div>
-          </td>
-        </tr>`;
-      }).join('');
-
       // ── Portfolio totals ─────────────────────────
-      const totalInvested = entries.reduce((s, e) => s + e.amount_invested, 0);
-      const totalCurrent  = entries.reduce((s, e) => s + e.current_value, 0);
-      const totalGain     = totalCurrent - totalInvested;
-      const totalRoR      = totalInvested > 0 ? (totalGain / totalInvested) * 100 : 0;
+      const totalInv  = investments.reduce((s, i) => s + i.total_invested, 0);
+      const totalCurr = investments.reduce((s, i) => s + i.current_value, 0);
+      const totalGain = totalCurr - totalInv;
+      const totalRoR  = totalInv > 0 ? (totalGain / totalInv) * 100 : 0;
 
-      // CAGR based on earliest to latest entry
-      const sorted    = [...entries].sort((a, b) => a.year !== b.year ? a.year - b.year : a.month - b.month);
-      const first     = sorted[0];
-      const last      = sorted[sorted.length - 1];
-      const monthsDiff = Math.max(1, (last.year - first.year) * 12 + (last.month - first.month) + 1);
-      const years      = monthsDiff / 12;
-      const portfolioCagr = years >= 0.1 && totalInvested > 0
-        ? (Math.pow(totalCurrent / totalInvested, 1 / years) - 1) * 100
-        : 0;
+      // Portfolio CAGR — use earliest start date
+      const earliest = investments.reduce((m, i) => i.start_date < m ? i.start_date : m, investments[0].start_date);
+      const portCAGR = calcCAGR(totalCurr, totalInv, earliest);
 
-      document.getElementById('ptTotalInvested').textContent = currency(totalInvested);
-      document.getElementById('ptCurrentValue').textContent  = currency(totalCurrent);
+      document.getElementById('ptTotalInvested').textContent = currency(totalInv);
+      document.getElementById('ptCurrentValue').textContent  = currency(totalCurr);
       document.getElementById('ptGainLoss').textContent      = `${totalGain >= 0 ? '+' : ''}${currency(totalGain)}`;
       document.getElementById('ptGainLoss').style.color      = totalGain >= 0 ? 'var(--good)' : 'var(--bad)';
-      document.getElementById('ptGainLossPct').textContent   = `${totalRoR >= 0 ? '+' : ''}${totalRoR.toFixed(2)}% return`;
+      document.getElementById('ptGainLossPct').textContent   = `${totalRoR >= 0 ? '+' : ''}${totalRoR.toFixed(2)}% overall return`;
       document.getElementById('ptGainLossPct').style.color   = totalRoR >= 0 ? 'var(--good)' : 'var(--bad)';
-      document.getElementById('ptCAGR').textContent          = `${portfolioCagr >= 0 ? '+' : ''}${portfolioCagr.toFixed(2)}%`;
-      document.getElementById('ptCAGR').style.color          = portfolioCagr >= 0 ? 'var(--good)' : 'var(--bad)';
+      document.getElementById('ptCAGR').textContent          = `${portCAGR >= 0 ? '+' : ''}${portCAGR.toFixed(2)}%`;
+      document.getElementById('ptCAGR').style.color          = portCAGR >= 0 ? 'var(--good)' : 'var(--bad)';
 
-      // Also update dashboard portfolio card if exists
-      const dashPortfolio = document.getElementById('dashPortfolioValue');
-      if (dashPortfolio) dashPortfolio.textContent = currency(totalCurrent);
+      // Also update dashboard card
+      const dashCard = document.getElementById('dashPortfolioValue');
+      if (dashCard) dashCard.textContent = currency(totalCurr);
 
-      // ── Per investment analytics ─────────────────
-      const byName = {};
-      entries.forEach(e => {
-        if (!byName[e.name]) byName[e.name] = [];
-        byName[e.name].push(e);
-      });
-
-      const perInvHTML = Object.entries(byName).map(([name, items]) => {
-        const invested = items.reduce((s, i) => s + i.amount_invested, 0);
-        // Use the LATEST entry's current_value for this investment
-        const latestEntry = items.sort((a, b) => a.year !== b.year ? b.year - a.year : b.month - a.month)[0];
-        const current     = latestEntry.current_value;
-        const gain        = current - invested;
-        const ror         = invested > 0 ? (gain / invested) * 100 : 0;
-        const entries_sorted = [...items].sort((a, b) => a.year !== b.year ? a.year - b.year : a.month - b.month);
-        const firstE  = entries_sorted[0];
-        const lastE   = entries_sorted[entries_sorted.length - 1];
-        const mDiff   = Math.max(1, (lastE.year - firstE.year) * 12 + (lastE.month - firstE.month) + 1);
-        const yrs     = mDiff / 12;
-        const cagr    = yrs >= 0.1 && invested > 0
-          ? (Math.pow(current / invested, 1 / yrs) - 1) * 100
-          : ror;
-
-        let rating, ratingColor;
-        if (ror >= 15)       { rating = '🚀 Excellent';  ratingColor = '#22c55e'; }
-        else if (ror >= 7)   { rating = '✅ Good';        ratingColor = '#3b9eff'; }
-        else if (ror >= 0)   { rating = '📈 Moderate';   ratingColor = '#f59e0b'; }
-        else if (ror >= -10) { rating = '⚠️ Low';         ratingColor = '#f97316'; }
-        else                 { rating = '🔴 Loss';        ratingColor = '#ef4444'; }
+      // ── Investment cards ─────────────────────────
+      document.getElementById('invCardList').innerHTML = investments.map(inv => {
+        const gain  = inv.current_value - inv.total_invested;
+        const ror   = inv.total_invested > 0 ? (gain / inv.total_invested) * 100 : 0;
+        const cagr  = calcCAGR(inv.current_value, inv.total_invested, inv.start_date);
+        const rt    = getRating(ror);
+        const pct   = inv.total_invested > 0 ? Math.min((inv.current_value / inv.total_invested) * 100, 200) : 0;
+        const barW  = Math.min(pct, 100);
+        const barColor = ror >= 7 ? '#22c55e' : ror >= 0 ? '#f59e0b' : '#ef4444';
 
         return `
-          <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:12px; padding:16px 20px; margin-bottom:12px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+          <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin-bottom:10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:6px;">
               <div>
-                <strong style="font-size:16px;">${name}</strong>
-                <span style="margin-left:10px; font-size:13px; color:${ratingColor}; font-weight:600;">${rating}</span>
+                <strong style="font-size:15px;">${inv.name}</strong>
+                <span style="font-size:12px; color:${rt.color}; margin-left:8px; font-weight:600;">${rt.label}</span>
               </div>
-              <span class="sub">${items.length} entr${items.length === 1 ? 'y' : 'ies'} · ${MONTH_LABELS_INV[firstE.month]} ${firstE.year} — ${MONTH_LABELS_INV[lastE.month]} ${lastE.year}</span>
+              <div style="display:flex; gap:6px;">
+                <button onclick="selectInvestmentForUpdate(${inv.id}, '${inv.name.replace(/'/g,"\'")}', ${inv.total_invested})"
+                  style="padding:5px 12px; background:rgba(59,158,255,0.15); border:1px solid rgba(59,158,255,0.3); border-radius:6px; color:#3b9eff; font-size:12px; cursor:pointer; font-weight:600;">
+                  + Update
+                </button>
+                <button onclick="showInvHistory(${inv.id}, '${inv.name.replace(/'/g,"\'")}' )"
+                  style="padding:5px 12px; background:rgba(255,255,255,0.06); border:1px solid var(--border); border-radius:6px; color:var(--muted); font-size:12px; cursor:pointer;">
+                  History
+                </button>
+                <button onclick="deleteInvestment(${inv.id})"
+                  style="padding:5px 10px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.2); border-radius:6px; color:#ef4444; font-size:12px; cursor:pointer;">
+                  ✕
+                </button>
+              </div>
             </div>
-            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(120px,1fr)); gap:10px;">
-              <div style="background:rgba(255,255,255,0.03); border-radius:8px; padding:10px; text-align:center;">
-                <div style="font-size:10px; color:var(--muted); margin-bottom:3px; text-transform:uppercase;">Total Invested</div>
-                <div style="font-weight:700; font-size:15px;">${currency(invested)}</div>
+            <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:10px;">
+              <div style="text-align:center;">
+                <div style="font-size:10px; color:var(--muted); margin-bottom:2px;">INVESTED</div>
+                <div style="font-weight:700; font-size:14px;">${currency(inv.total_invested)}</div>
               </div>
-              <div style="background:rgba(255,255,255,0.03); border-radius:8px; padding:10px; text-align:center;">
-                <div style="font-size:10px; color:var(--muted); margin-bottom:3px; text-transform:uppercase;">Current Value</div>
-                <div style="font-weight:700; font-size:15px;">${currency(current)}</div>
+              <div style="text-align:center;">
+                <div style="font-size:10px; color:var(--muted); margin-bottom:2px;">VALUE</div>
+                <div style="font-weight:700; font-size:14px;">${currency(inv.current_value)}</div>
               </div>
-              <div style="background:rgba(255,255,255,0.03); border-radius:8px; padding:10px; text-align:center;">
-                <div style="font-size:10px; color:var(--muted); margin-bottom:3px; text-transform:uppercase;">Gain / Loss</div>
-                <div style="font-weight:700; font-size:15px; color:${gain >= 0 ? 'var(--good)' : 'var(--bad)'};">${gain >= 0 ? '+' : ''}${currency(gain)}</div>
+              <div style="text-align:center;">
+                <div style="font-size:10px; color:var(--muted); margin-bottom:2px;">RETURN</div>
+                <div style="font-weight:700; font-size:14px; color:${ror >= 0 ? 'var(--good)' : 'var(--bad)'};">${ror >= 0 ? '+' : ''}${ror.toFixed(2)}%</div>
               </div>
-              <div style="background:rgba(255,255,255,0.03); border-radius:8px; padding:10px; text-align:center;">
-                <div style="font-size:10px; color:var(--muted); margin-bottom:3px; text-transform:uppercase;">Return %</div>
-                <div style="font-weight:700; font-size:15px; color:${ror >= 0 ? 'var(--good)' : 'var(--bad)'};">${ror >= 0 ? '+' : ''}${ror.toFixed(2)}%</div>
+              <div style="text-align:center;">
+                <div style="font-size:10px; color:var(--muted); margin-bottom:2px;">CAGR</div>
+                <div style="font-weight:700; font-size:14px; color:${cagr >= 0 ? 'var(--good)' : 'var(--bad)'};">${cagr >= 0 ? '+' : ''}${cagr.toFixed(2)}%</div>
               </div>
-              <div style="background:rgba(255,255,255,0.03); border-radius:8px; padding:10px; text-align:center;">
-                <div style="font-size:10px; color:var(--muted); margin-bottom:3px; text-transform:uppercase;">CAGR</div>
-                <div style="font-weight:700; font-size:15px; color:${cagr >= 0 ? 'var(--good)' : 'var(--bad)'};">${cagr >= 0 ? '+' : ''}${cagr.toFixed(2)}%</div>
-              </div>
+            </div>
+            <div style="background:rgba(255,255,255,0.06); border-radius:100px; height:6px;">
+              <div style="height:100%; width:${barW}%; background:${barColor}; border-radius:100px; transition:width 0.5s;"></div>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-top:4px;">
+              <span>Since ${inv.start_date}</span>
+              <span style="color:${gain >= 0 ? 'var(--good)' : 'var(--bad)'};">${gain >= 0 ? '+' : ''}${currency(gain)}</span>
             </div>
           </div>`;
       }).join('');
 
-      document.getElementById('invPerInvestment').innerHTML = perInvHTML;
+      // ── Per investment performance section ───────
+      document.getElementById('invPerInvestment').innerHTML = investments.map(inv => {
+        const gain = inv.current_value - inv.total_invested;
+        const ror  = inv.total_invested > 0 ? (gain / inv.total_invested) * 100 : 0;
+        const cagr = calcCAGR(inv.current_value, inv.total_invested, inv.start_date);
+        const rt   = getRating(ror);
+        const scenarios = [
+          { label: 'Conservative 4%',  fv: inv.total_invested * Math.pow(1.04, Math.max(1, (new Date() - new Date(inv.start_date)) / (1000*60*60*24*365.25))), color: '#22c55e' },
+          { label: 'Moderate 7%',      fv: inv.total_invested * Math.pow(1.07, Math.max(1, (new Date() - new Date(inv.start_date)) / (1000*60*60*24*365.25))), color: '#3b9eff' },
+          { label: 'Growth 10%',       fv: inv.total_invested * Math.pow(1.10, Math.max(1, (new Date() - new Date(inv.start_date)) / (1000*60*60*24*365.25))), color: '#f59e0b' },
+        ];
+        return `
+          <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin-bottom:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:6px;">
+              <strong style="font-size:15px;">${inv.name}</strong>
+              <span style="color:${rt.color}; font-weight:600; font-size:13px;">${rt.label}</span>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:12px;">
+              ${scenarios.map(s => `
+                <div style="background:rgba(255,255,255,0.03); border-radius:8px; padding:10px; text-align:center;">
+                  <div style="font-size:10px; color:var(--muted); margin-bottom:4px;">${s.label}</div>
+                  <div style="font-weight:700; color:${s.color};">${currency(s.fv)}</div>
+                  <div style="font-size:11px; color:var(--muted);">projected</div>
+                </div>`).join('')}
+            </div>
+            <div style="font-size:12px; color:var(--muted);">
+              Actual CAGR: <strong style="color:${cagr >= 0 ? 'var(--good)' : 'var(--bad)'};">${cagr >= 0 ? '+' : ''}${cagr.toFixed(2)}%</strong> &nbsp;·&nbsp;
+              Return: <strong style="color:${ror >= 0 ? 'var(--good)' : 'var(--bad)'};">${ror >= 0 ? '+' : ''}${ror.toFixed(2)}%</strong> &nbsp;·&nbsp;
+              Gain: <strong style="color:${gain >= 0 ? 'var(--good)' : 'var(--bad)'};">${gain >= 0 ? '+' : ''}${currency(gain)}</strong>
+            </div>
+          </div>`;
+      }).join('');
 
       // ── Charts ───────────────────────────────────
-      const names        = Object.keys(byName);
-      const chartInvested = names.map(n => byName[n].reduce((s, i) => s + i.amount_invested, 0));
-      const chartCurrent  = names.map(n => {
-        const latest = [...byName[n]].sort((a, b) => a.year !== b.year ? b.year - a.year : b.month - a.month)[0];
-        return latest.current_value;
-      });
-      const chartRoR = names.map((n, i) => chartInvested[i] > 0 ? ((chartCurrent[i] - chartInvested[i]) / chartInvested[i]) * 100 : 0);
-      const barColors = chartRoR.map(r => r >= 15 ? '#22c55e' : r >= 7 ? '#3b9eff' : r >= 0 ? '#f59e0b' : '#ef4444');
+      const names    = investments.map(i => i.name);
+      const invested = investments.map(i => i.total_invested);
+      const current  = investments.map(i => i.current_value);
+      const rors     = investments.map(i => i.total_invested > 0 ? ((i.current_value - i.total_invested) / i.total_invested) * 100 : 0);
+      const barClrs  = rors.map(r => r >= 7 ? 'rgba(34,197,94,0.7)' : r >= 0 ? 'rgba(245,158,11,0.7)' : 'rgba(239,68,68,0.7)');
 
-      // Compare chart
       if (invCompareChartInst) { invCompareChartInst.destroy(); invCompareChartInst = null; }
       invCompareChartInst = new Chart(document.getElementById('invCompareChart').getContext('2d'), {
         type: 'bar',
-        data: {
-          labels: names,
-          datasets: [
-            { label: 'Invested', data: chartInvested, backgroundColor: 'rgba(59,158,255,0.5)', borderColor: '#3b9eff', borderWidth:1, borderRadius:4 },
-            { label: 'Current Value', data: chartCurrent, backgroundColor: 'rgba(34,197,94,0.5)', borderColor: '#22c55e', borderWidth:1, borderRadius:4 }
-          ]
-        },
-        options: { responsive:true, maintainAspectRatio:false,
-          plugins: { legend: { labels: { color:'#94a3b8' } }, tooltip: { callbacks: { label: c => ` £${c.parsed.y.toLocaleString('en-GB',{minimumFractionDigits:2})}` } } },
-          scales: { x: { ticks:{color:'#94a3b8'}, grid:{color:'rgba(255,255,255,0.05)'} }, y: { ticks:{color:'#94a3b8', callback: v=>'£'+v.toLocaleString()}, grid:{color:'rgba(255,255,255,0.05)'} } }
-        }
+        data: { labels: names, datasets: [
+          { label: 'Invested', data: invested, backgroundColor: 'rgba(59,158,255,0.5)', borderColor: '#3b9eff', borderWidth:1, borderRadius:4 },
+          { label: 'Current Value', data: current, backgroundColor: 'rgba(34,197,94,0.5)', borderColor: '#22c55e', borderWidth:1, borderRadius:4 }
+        ]},
+        options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{labels:{color:'#94a3b8'}}, tooltip:{callbacks:{label:c=>` £${c.parsed.y.toLocaleString('en-GB',{minimumFractionDigits:2})}`}} }, scales:{ x:{ticks:{color:'#94a3b8'},grid:{color:'rgba(255,255,255,0.05)'}}, y:{ticks:{color:'#94a3b8',callback:v=>'£'+v.toLocaleString()},grid:{color:'rgba(255,255,255,0.05)'}} } }
       });
 
-      // Return % chart
       if (invReturnChartInst) { invReturnChartInst.destroy(); invReturnChartInst = null; }
       invReturnChartInst = new Chart(document.getElementById('invReturnChart').getContext('2d'), {
         type: 'bar',
-        data: {
-          labels: names,
-          datasets: [{ label: 'Return %', data: chartRoR, backgroundColor: barColors, borderColor: barColors, borderWidth:1, borderRadius:4 }]
-        },
-        options: { responsive:true, maintainAspectRatio:false,
-          plugins: { legend: { labels:{color:'#94a3b8'} }, tooltip: { callbacks: { label: c => ` ${c.parsed.y >= 0 ? '+' : ''}${c.parsed.y.toFixed(2)}%` } } },
-          scales: { x: { ticks:{color:'#94a3b8'}, grid:{color:'rgba(255,255,255,0.05)'} }, y: { ticks:{color:'#94a3b8', callback: v=>`${v}%`}, grid:{color:'rgba(255,255,255,0.05)'} } }
-        }
-      });
-
-      // Timeline chart — monthly contributions by investment name
-      const allMonths = [...new Set(entries.map(e => `${e.year}-${String(e.month).padStart(2,'0')}`))]
-        .sort()
-        .map(k => { const [y, m] = k.split('-'); return `${MONTH_LABELS_INV[parseInt(m)]} ${y}`; });
-      const allMonthKeys = [...new Set(entries.map(e => `${e.year}-${String(e.month).padStart(2,'0')}`))].sort();
-      const COLORS = ['#3b9eff','#22c55e','#f59e0b','#ef4444','#a78bfa','#f97316','#06b6d4','#ec4899'];
-
-      const timelineDatasets = names.map((name, ni) => ({
-        label: name,
-        data: allMonthKeys.map(mk => {
-          const [y, m] = mk.split('-');
-          const match = byName[name].find(e => e.year == parseInt(y) && e.month == parseInt(m));
-          return match ? match.amount_invested : 0;
-        }),
-        backgroundColor: COLORS[ni % COLORS.length] + '99',
-        borderColor: COLORS[ni % COLORS.length],
-        borderWidth: 1, borderRadius: 4
-      }));
-
-      if (invTimelineChartInst) { invTimelineChartInst.destroy(); invTimelineChartInst = null; }
-      invTimelineChartInst = new Chart(document.getElementById('invTimelineChart').getContext('2d'), {
-        type: 'bar',
-        data: { labels: allMonths, datasets: timelineDatasets },
-        options: {
-          responsive:true, maintainAspectRatio:false,
-          plugins: { legend:{labels:{color:'#94a3b8'}}, tooltip:{callbacks:{label: c=>` ${c.dataset.label}: £${c.parsed.y.toLocaleString('en-GB',{minimumFractionDigits:2})}`}} },
-          scales: {
-            x: { stacked:true, ticks:{color:'#94a3b8'}, grid:{color:'rgba(255,255,255,0.05)'} },
-            y: { stacked:true, ticks:{color:'#94a3b8', callback:v=>'£'+v.toLocaleString()}, grid:{color:'rgba(255,255,255,0.05)'} }
-          }
-        }
+        data: { labels: names, datasets: [{ label: 'Return %', data: rors, backgroundColor: barClrs, borderColor: barClrs, borderWidth:1, borderRadius:4 }] },
+        options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{labels:{color:'#94a3b8'}}, tooltip:{callbacks:{label:c=>`${c.parsed.y>=0?'+':''}${c.parsed.y.toFixed(2)}%`}} }, scales:{ x:{ticks:{color:'#94a3b8'},grid:{color:'rgba(255,255,255,0.05)'}}, y:{ticks:{color:'#94a3b8',callback:v=>`${v}%`},grid:{color:'rgba(255,255,255,0.05)'}} } }
       });
     }
 
