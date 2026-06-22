@@ -205,27 +205,76 @@
           <div class="mobile-brand-icon">💰</div>
           <div class="mobile-brand-name">Personal Finance</div>
         </div>
-        <h2>Welcome back</h2>
-        <div class="tagline">Sign in to your private dashboard</div>
 
-        <div class="field-group">
-          <label class="field-label">Username</label>
-          <div class="field-wrap">
-            <span class="field-icon">👤</span>
-            <input id="username" type="text" placeholder="Enter your username" autocomplete="username" />
-          </div>
+        <!-- Tabs -->
+        <div style="display:flex; gap:0; margin-bottom:28px; background:rgba(255,255,255,0.04); border-radius:10px; padding:4px;">
+          <button id="tabSignIn" onclick="switchTab('signin')"
+            style="flex:1; padding:10px; border:none; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; transition:all 0.2s; background:linear-gradient(135deg,#3b9eff,#2563eb); color:#fff;">
+            Sign In
+          </button>
+          <button id="tabSignUp" onclick="switchTab('signup')"
+            style="flex:1; padding:10px; border:none; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; transition:all 0.2s; background:transparent; color:var(--muted);">
+            Sign Up
+          </button>
         </div>
 
-        <div class="field-group">
-          <label class="field-label">Password</label>
-          <div class="field-wrap">
-            <span class="field-icon">🔑</span>
-            <input id="password" type="password" placeholder="Enter your password" autocomplete="current-password" />
+        <!-- Sign In Form -->
+        <div id="signinForm">
+          <h2 style="margin-bottom:4px;">Welcome back</h2>
+          <div class="tagline">Sign in to your private dashboard</div>
+
+          <div class="field-group">
+            <label class="field-label">Username</label>
+            <div class="field-wrap">
+              <span class="field-icon">👤</span>
+              <input id="username" type="text" placeholder="Enter your username" autocomplete="username" />
+            </div>
           </div>
+
+          <div class="field-group">
+            <label class="field-label">Password</label>
+            <div class="field-wrap">
+              <span class="field-icon">🔑</span>
+              <input id="password" type="password" placeholder="Enter your password" autocomplete="current-password" />
+            </div>
+          </div>
+
+          <button class="login-btn" id="loginBtn" onclick="login()">Sign In →</button>
+          <div class="error-msg" id="loginError"></div>
         </div>
 
-        <button class="login-btn" id="loginBtn" onclick="login()">Sign In →</button>
-        <div class="error-msg" id="error"></div>
+        <!-- Sign Up Form -->
+        <div id="signupForm" style="display:none;">
+          <h2 style="margin-bottom:4px;">Create account</h2>
+          <div class="tagline">Free forever · No credit card · No ads</div>
+
+          <div class="field-group">
+            <label class="field-label">Username</label>
+            <div class="field-wrap">
+              <span class="field-icon">👤</span>
+              <input id="regUsername" type="text" placeholder="Choose a username" autocomplete="username" />
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Password</label>
+            <div class="field-wrap">
+              <span class="field-icon">🔑</span>
+              <input id="regPassword" type="password" placeholder="Choose a password (min 6 chars)" />
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Confirm Password</label>
+            <div class="field-wrap">
+              <span class="field-icon">🔑</span>
+              <input id="regConfirm" type="password" placeholder="Confirm your password" />
+            </div>
+          </div>
+
+          <button class="login-btn" id="signupBtn" onclick="register()">Create Account →</button>
+          <div class="error-msg" id="signupError"></div>
+        </div>
 
         <div class="divider">
           <div class="divider-line"></div>
@@ -247,11 +296,34 @@
   <script>
     const API = "https://finance-app-t1am.onrender.com";
 
+    function switchTab(tab) {
+      const signin = document.getElementById('signinForm');
+      const signup = document.getElementById('signupForm');
+      const tabSI  = document.getElementById('tabSignIn');
+      const tabSU  = document.getElementById('tabSignUp');
+
+      if (tab === 'signin') {
+        signin.style.display = 'block';
+        signup.style.display = 'none';
+        tabSI.style.background = 'linear-gradient(135deg,#3b9eff,#2563eb)';
+        tabSI.style.color = '#fff';
+        tabSU.style.background = 'transparent';
+        tabSU.style.color = 'var(--muted)';
+      } else {
+        signin.style.display = 'none';
+        signup.style.display = 'block';
+        tabSU.style.background = 'linear-gradient(135deg,#3b9eff,#2563eb)';
+        tabSU.style.color = '#fff';
+        tabSI.style.background = 'transparent';
+        tabSI.style.color = 'var(--muted)';
+      }
+    }
+
     async function login() {
       const username = document.getElementById("username").value.trim();
       const password = document.getElementById("password").value;
-      const btn = document.getElementById("loginBtn");
-      const errorEl = document.getElementById("error");
+      const btn      = document.getElementById("loginBtn");
+      const errorEl  = document.getElementById("loginError");
 
       if (!username || !password) {
         errorEl.textContent = "⚠ Please enter your username and password";
@@ -292,7 +364,92 @@
       }
     }
 
-    document.addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+    async function register() {
+      const username = document.getElementById("regUsername").value.trim();
+      const password = document.getElementById("regPassword").value;
+      const confirm  = document.getElementById("regConfirm").value;
+      const btn      = document.getElementById("signupBtn");
+      const errorEl  = document.getElementById("signupError");
+
+      errorEl.style.color = "var(--danger)";
+      errorEl.textContent = "";
+
+      if (!username || !password || !confirm) {
+        errorEl.textContent = "⚠ Please fill in all fields";
+        return;
+      }
+      if (username.length < 3) {
+        errorEl.textContent = "⚠ Username must be at least 3 characters";
+        return;
+      }
+      if (password.length < 6) {
+        errorEl.textContent = "⚠ Password must be at least 6 characters";
+        return;
+      }
+      if (password !== confirm) {
+        errorEl.textContent = "⚠ Passwords do not match";
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = "Creating account...";
+
+      try {
+        const res = await fetch(API + "/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password, role: "user" })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          errorEl.textContent = "⚠ " + (data.detail || "Registration failed");
+          btn.disabled = false;
+          btn.textContent = "Create Account →";
+          return;
+        }
+
+        // Auto login after registration
+        errorEl.style.color = "#22c55e";
+        errorEl.textContent = "✅ Account created! Signing you in...";
+
+        const form = new URLSearchParams();
+        form.append("username", username);
+        form.append("password", password);
+
+        const loginRes = await fetch(API + "/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: form
+        });
+
+        if (loginRes.ok) {
+          const loginData = await loginRes.json();
+          localStorage.setItem("token", loginData.access_token);
+          btn.textContent = "✓ Welcome!";
+          setTimeout(() => { window.location = "./dashboard.html"; }, 500);
+        } else {
+          errorEl.textContent = "✅ Account created! Please sign in.";
+          btn.textContent = "Create Account →";
+          btn.disabled = false;
+          setTimeout(() => switchTab("signin"), 1500);
+        }
+
+      } catch (e) {
+        errorEl.textContent = "⚠ Connection error. Please try again.";
+        btn.disabled = false;
+        btn.textContent = "Create Account →";
+      }
+    }
+
+    document.addEventListener("keydown", e => {
+      if (e.key === "Enter") {
+        const signupVisible = document.getElementById("signupForm").style.display !== "none";
+        if (signupVisible) register();
+        else login();
+      }
+    });
   </script>
 
   <script>
