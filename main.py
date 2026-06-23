@@ -18,6 +18,9 @@ from routers.categories import router as categories_router
 from routers.ai import router as ai_router
 from routers.bank_statement import router as bank_statement_router
 from routers.investments_router import router as investments_router
+from routers.stocks_router import router as stocks_router
+
+
 
 from models.user import User
 from models.transaction import Transaction
@@ -69,6 +72,8 @@ app.include_router(categories_router)
 app.include_router(ai_router)
 app.include_router(bank_statement_router)
 app.include_router(investments_router)
+app.include_router(stocks_router)
+
 
 
 @app.get("/")

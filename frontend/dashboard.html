@@ -731,6 +731,9 @@
       <button class="nav-item" id="nav-investment" onclick="showSection('investment')">
         <span class="nav-icon">💹</span> Investments
       </button>
+      <button class="nav-item" id="nav-stocks" onclick="showSection('stocks')">
+        <span class="nav-icon">📈</span> Stocks ISA
+      </button>
 
       <span class="nav-group-label">Net Worth</span>
       <button class="nav-item" id="nav-assets" onclick="showSection('assets')">
@@ -1720,6 +1723,126 @@
         </div>
       </div>
     </div>
+
+
+    <!-- ════════════════════════════════════════════
+         STOCKS ISA SECTION
+         ════════════════════════════════════════════ -->
+    <section id="stocks">
+
+      <!-- Portfolio Summary Cards -->
+      <div class="grid-cards" style="margin-bottom:20px;">
+        <div class="card">
+          <h3>Total Invested</h3>
+          <div class="value" id="stTotalInvested">—</div>
+          <div class="sub">Cost basis</div>
+        </div>
+        <div class="card">
+          <h3>Portfolio Value</h3>
+          <div class="value" id="stTotalValue">—</div>
+          <div class="sub" id="stValueSub">Live from Trading 212</div>
+        </div>
+        <div class="card">
+          <h3>Total P&amp;L</h3>
+          <div class="value" id="stTotalPnl">—</div>
+          <div class="sub" id="stPnlPct">—</div>
+        </div>
+        <div class="card">
+          <h3>Cash Available</h3>
+          <div class="value" id="stCash">—</div>
+          <div class="sub" id="stPositions">—</div>
+        </div>
+      </div>
+
+      <!-- Refresh button -->
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+        <div class="sub" id="stLastUpdated">Click Refresh to load live data</div>
+        <div style="display:flex; gap:8px;">
+          <button onclick="loadStocksPortfolio()" style="padding:8px 20px; background:var(--accent); border:none; border-radius:8px; color:#fff; font-weight:600; cursor:pointer; font-size:13px;">⟳ Refresh Live Data</button>
+          <select id="stSortBy" onchange="renderStocksTable()" style="padding:8px 12px; border-radius:8px; background:var(--panel-2); border:1px solid var(--border); color:var(--text); font-size:13px;">
+            <option value="pnl">Sort by P&L</option>
+            <option value="return">Sort by Return %</option>
+            <option value="value">Sort by Value</option>
+            <option value="pe">Sort by P/E</option>
+            <option value="name">Sort by Name</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Holdings Table -->
+      <div class="panel stack-gap" style="margin-bottom:20px;">
+        <h3>📊 Holdings — All Metrics</h3>
+        <div style="overflow:auto;">
+          <table id="stHoldingsTable" style="min-width:1100px;">
+            <thead>
+              <tr>
+                <th>Stock</th>
+                <th>Qty</th>
+                <th>Avg Price</th>
+                <th>Current</th>
+                <th>Invested</th>
+                <th>Value</th>
+                <th>P&amp;L</th>
+                <th>Return %</th>
+                <th>P/E</th>
+                <th>EPS</th>
+                <th>Mkt Cap</th>
+                <th>Cash Flow</th>
+                <th>Debt/Eq</th>
+                <th>52W Range</th>
+              </tr>
+            </thead>
+            <tbody id="stHoldingsBody">
+              <tr><td colspan="14" class="sub" style="text-align:center; padding:24px;">Click "Refresh Live Data" to load your portfolio</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Charts row -->
+      <div class="two-col" style="margin-bottom:20px;">
+        <div class="panel stack-gap">
+          <h3>💰 Invested vs Current Value</h3>
+          <div class="chart-wrap" style="height:300px;">
+            <canvas id="stCompareChart"></canvas>
+          </div>
+        </div>
+        <div class="panel stack-gap">
+          <h3>📈 Return % per Stock</h3>
+          <div class="chart-wrap" style="height:300px;">
+            <canvas id="stReturnChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comparison section -->
+      <div class="panel stack-gap" style="margin-bottom:20px;">
+        <h3>⚖️ Compare Holdings</h3>
+        <div class="sub" style="margin-bottom:16px;">Select stocks to compare side by side</div>
+        <div id="stCompareSelect" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px;"></div>
+        <div id="stCompareTable"></div>
+      </div>
+
+      <!-- P/E Analysis -->
+      <div class="panel stack-gap" style="margin-bottom:20px;">
+        <h3>📊 P/E Ratio Analysis</h3>
+        <div class="sub" style="margin-bottom:16px;">Are your stocks over or undervalued?</div>
+        <div id="stPeAnalysis"></div>
+      </div>
+
+      <!-- AI Analysis -->
+      <div class="panel stack-gap">
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+          <div>
+            <h3 style="margin:0 0 4px;">✨ AI Portfolio Analysis</h3>
+            <div class="sub">Claude analyses your holdings and gives personalised insights</div>
+          </div>
+          <button onclick="loadStocksAIAnalysis()" id="stAiBtn" style="padding:10px 20px; background:linear-gradient(135deg,#3b9eff,#7c3aed); border:none; border-radius:8px; color:#fff; font-weight:600; cursor:pointer;">✨ Analyse Portfolio</button>
+        </div>
+        <div id="stAiResult" style="margin-top:8px;"></div>
+      </div>
+
+    </section>
 
     <section id="charts">
 
@@ -3355,11 +3478,12 @@
       assets:        { title: 'Assets',         sub: 'Net worth — assets' },
       liabilities:   { title: 'Liabilities',    sub: 'Net worth — liabilities' },
       users:         { title: 'Users',          sub: 'User management (Admin only)' },
-      investment:    { title: 'Investments',    sub: 'Portfolio performance & analytics' }
+      investment:    { title: 'Investments',    sub: 'Portfolio performance & analytics' },
+      stocks:        { title: 'Stocks ISA',      sub: 'Live Trading 212 portfolio' }
     };
 
     function showSection(sectionId) {
-      const sections = ['dashboard', 'transactions', 'budgets', 'goals', 'assets', 'liabilities', 'categories', 'charts', 'users', 'investment'];
+      const sections = ['dashboard', 'transactions', 'budgets', 'goals', 'assets', 'liabilities', 'categories', 'charts', 'users', 'investment', 'stocks'];
       sections.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.style.display = 'none';
@@ -3386,6 +3510,7 @@
 
       // Investment lazy-load
       if (sectionId === 'investment') loadInvestmentData();
+      if (sectionId === 'stocks') loadStocksPortfolio();
 
       // Close sidebar on mobile
       closeSidebar();
@@ -4420,6 +4545,342 @@
         data: { labels: names, datasets: [{ label: 'Return %', data: rors, backgroundColor: barClrs, borderColor: barClrs, borderWidth:1, borderRadius:4 }] },
         options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{labels:{color:'#94a3b8'}}, tooltip:{callbacks:{label:c=>`${c.parsed.y>=0?'+':''}${c.parsed.y.toFixed(2)}%`}} }, scales:{ x:{ticks:{color:'#94a3b8'},grid:{color:'rgba(255,255,255,0.05)'}}, y:{ticks:{color:'#94a3b8',callback:v=>`${v}%`},grid:{color:'rgba(255,255,255,0.05)'}} } }
       });
+    }
+
+
+    // ═══════════════════════════════════════════════
+    //  STOCKS ISA — TRADING 212 + FINNHUB
+    // ═══════════════════════════════════════════════
+
+    let stPortfolioData     = null;
+    let stCompareChartInst  = null;
+    let stReturnChartInst   = null;
+    let stSelectedCompare   = new Set();
+
+    function getStocksEndpoint() { return `${getApiBase()}/stocks/`; }
+
+    function formatMarketCap(m) {
+      if (!m) return '—';
+      if (m >= 1000000) return `$${(m/1000000).toFixed(1)}T`;
+      if (m >= 1000)    return `$${(m/1000).toFixed(1)}B`;
+      return `$${m.toFixed(0)}M`;
+    }
+
+    function formatNum(v, decimals=2, prefix='') {
+      if (v === null || v === undefined) return '—';
+      return `${prefix}${parseFloat(v).toFixed(decimals)}`;
+    }
+
+    async function loadStocksPortfolio() {
+      const tbody = document.getElementById('stHoldingsBody');
+      tbody.innerHTML = '<tr><td colspan="14" class="sub" style="text-align:center; padding:24px;">⏳ Loading live data from Trading 212...</td></tr>';
+
+      try {
+        const res  = await authFetch(`${getStocksEndpoint()}portfolio`);
+        const data = await res.json();
+
+        if (!res.ok) {
+          tbody.innerHTML = `<tr><td colspan="14" style="color:var(--bad); padding:16px;">${data.detail || 'Failed to load portfolio'}</td></tr>`;
+          return;
+        }
+
+        stPortfolioData = data;
+
+        // Update summary cards
+        const s = data.summary;
+        document.getElementById('stTotalInvested').textContent = currency(s.total_invested);
+        document.getElementById('stTotalValue').textContent    = currency(s.total_value);
+        document.getElementById('stTotalPnl').textContent      = `${s.total_pnl >= 0 ? '+' : ''}${currency(s.total_pnl)}`;
+        document.getElementById('stTotalPnl').style.color      = s.total_pnl >= 0 ? 'var(--good)' : 'var(--bad)';
+        document.getElementById('stPnlPct').textContent        = `${s.total_return_pct >= 0 ? '+' : ''}${s.total_return_pct.toFixed(2)}% overall`;
+        document.getElementById('stPnlPct').style.color        = s.total_return_pct >= 0 ? 'var(--good)' : 'var(--bad)';
+        document.getElementById('stCash').textContent          = currency(s.cash || 0);
+        document.getElementById('stPositions').textContent     = `${s.position_count} position${s.position_count !== 1 ? 's' : ''}`;
+        document.getElementById('stLastUpdated').textContent   = `Last updated: ${new Date().toLocaleTimeString('en-GB')}`;
+
+        renderStocksTable();
+        renderStocksCharts();
+        renderCompareSelect();
+        renderPeAnalysis();
+
+      } catch(e) {
+        tbody.innerHTML = `<tr><td colspan="14" style="color:var(--bad); padding:16px;">Error: ${e.message}</td></tr>`;
+      }
+    }
+
+    function renderStocksTable() {
+      if (!stPortfolioData) return;
+      const sortBy = document.getElementById('stSortBy').value;
+      const positions = [...stPortfolioData.positions];
+
+      positions.sort((a, b) => {
+        if (sortBy === 'pnl')    return b.pnl - a.pnl;
+        if (sortBy === 'return') return b.return_pct - a.return_pct;
+        if (sortBy === 'value')  return b.current_value - a.current_value;
+        if (sortBy === 'pe')     return (b.pe_ratio || 0) - (a.pe_ratio || 0);
+        if (sortBy === 'name')   return (a.name || '').localeCompare(b.name || '');
+        return 0;
+      });
+
+      const tbody = document.getElementById('stHoldingsBody');
+      tbody.innerHTML = positions.map(p => {
+        const pnlColor = p.pnl >= 0 ? 'var(--good)' : 'var(--bad)';
+        const rorColor = p.return_pct >= 0 ? 'var(--good)' : 'var(--bad)';
+        const w52 = (p['52w_high'] && p['52w_low'])
+          ? `$${parseFloat(p['52w_low']).toFixed(2)} — $${parseFloat(p['52w_high']).toFixed(2)}`
+          : '—';
+
+        // P/E traffic light
+        let peColor = 'var(--muted)';
+        let peNote  = '';
+        if (p.pe_ratio) {
+          if (p.pe_ratio < 15)       { peColor = 'var(--good)';  peNote = '🟢'; }
+          else if (p.pe_ratio < 25)  { peColor = 'var(--accent)'; peNote = '🔵'; }
+          else if (p.pe_ratio < 40)  { peColor = 'var(--warn)';  peNote = '🟡'; }
+          else                       { peColor = 'var(--bad)';   peNote = '🔴'; }
+        }
+
+        return `<tr>
+          <td>
+            <div style="display:flex; align-items:center; gap:8px;">
+              ${p.logo ? `<img src="${p.logo}" style="width:20px; height:20px; border-radius:4px; object-fit:contain;" onerror="this.style.display='none'" />` : ''}
+              <div>
+                <strong>${p.plain_ticker}</strong>
+                <div style="font-size:11px; color:var(--muted);">${p.industry || ''}</div>
+              </div>
+            </div>
+          </td>
+          <td>${parseFloat(p.quantity).toFixed(4)}</td>
+          <td>${formatNum(p.avg_price, 2, '$')}</td>
+          <td>${formatNum(p.current_price, 2, '$')}</td>
+          <td>${currency(p.invested)}</td>
+          <td>${currency(p.current_value)}</td>
+          <td style="color:${pnlColor}; font-weight:600;">${p.pnl >= 0 ? '+' : ''}${currency(p.pnl)}</td>
+          <td style="color:${rorColor}; font-weight:600;">${p.return_pct >= 0 ? '+' : ''}${p.return_pct.toFixed(2)}%</td>
+          <td style="color:${peColor};">${p.pe_ratio ? peNote + ' ' + parseFloat(p.pe_ratio).toFixed(1) : '—'}</td>
+          <td>${p.eps ? formatNum(p.eps, 2, '$') : '—'}</td>
+          <td>${formatMarketCap(p.market_cap_m)}</td>
+          <td style="color:${p.free_cash_flow > 0 ? 'var(--good)' : 'var(--bad)'};">${p.free_cash_flow ? formatNum(p.free_cash_flow, 2, '$') : '—'}</td>
+          <td>${p.debt_equity ? parseFloat(p.debt_equity).toFixed(2) : '—'}</td>
+          <td style="font-size:12px;">${w52}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function renderStocksCharts() {
+      if (!stPortfolioData) return;
+      const positions = stPortfolioData.positions;
+      const names     = positions.map(p => p.plain_ticker);
+      const invested  = positions.map(p => p.invested);
+      const values    = positions.map(p => p.current_value);
+      const returns   = positions.map(p => p.return_pct);
+      const barColors = returns.map(r => r >= 0 ? 'rgba(34,197,94,0.7)' : 'rgba(239,68,68,0.7)');
+
+      if (stCompareChartInst) { stCompareChartInst.destroy(); stCompareChartInst = null; }
+      stCompareChartInst = new Chart(document.getElementById('stCompareChart').getContext('2d'), {
+        type: 'bar',
+        data: { labels: names, datasets: [
+          { label: 'Invested', data: invested, backgroundColor: 'rgba(59,158,255,0.5)', borderColor: '#3b9eff', borderWidth:1, borderRadius:4 },
+          { label: 'Current Value', data: values, backgroundColor: 'rgba(34,197,94,0.5)', borderColor: '#22c55e', borderWidth:1, borderRadius:4 }
+        ]},
+        options: { responsive:true, maintainAspectRatio:false,
+          plugins:{ legend:{labels:{color:'#94a3b8'}}, tooltip:{callbacks:{label:c=>`£${c.parsed.y.toFixed(2)}`}} },
+          scales:{ x:{ticks:{color:'#94a3b8'},grid:{color:'rgba(255,255,255,0.05)'}}, y:{ticks:{color:'#94a3b8',callback:v=>'£'+v},grid:{color:'rgba(255,255,255,0.05)'}} } }
+      });
+
+      if (stReturnChartInst) { stReturnChartInst.destroy(); stReturnChartInst = null; }
+      stReturnChartInst = new Chart(document.getElementById('stReturnChart').getContext('2d'), {
+        type: 'bar',
+        data: { labels: names, datasets: [{ label: 'Return %', data: returns, backgroundColor: barColors, borderColor: barColors, borderWidth:1, borderRadius:4 }] },
+        options: { responsive:true, maintainAspectRatio:false,
+          plugins:{ legend:{labels:{color:'#94a3b8'}}, tooltip:{callbacks:{label:c=>`${c.parsed.y>=0?'+':''}${c.parsed.y.toFixed(2)}%`}} },
+          scales:{ x:{ticks:{color:'#94a3b8'},grid:{color:'rgba(255,255,255,0.05)'}}, y:{ticks:{color:'#94a3b8',callback:v=>`${v}%`},grid:{color:'rgba(255,255,255,0.05)'}} } }
+      });
+    }
+
+    function renderCompareSelect() {
+      if (!stPortfolioData) return;
+      const container = document.getElementById('stCompareSelect');
+      container.innerHTML = stPortfolioData.positions.map(p => `
+        <button onclick="toggleCompare('${p.plain_ticker}')" id="cmpBtn_${p.plain_ticker}"
+          style="padding:6px 14px; border-radius:20px; border:1px solid var(--border); background:rgba(255,255,255,0.04); color:var(--muted); cursor:pointer; font-size:13px; transition:all 0.2s;">
+          ${p.plain_ticker}
+        </button>`).join('');
+    }
+
+    function toggleCompare(ticker) {
+      const btn = document.getElementById(`cmpBtn_${ticker}`);
+      if (stSelectedCompare.has(ticker)) {
+        stSelectedCompare.delete(ticker);
+        btn.style.background = 'rgba(255,255,255,0.04)';
+        btn.style.color = 'var(--muted)';
+        btn.style.borderColor = 'var(--border)';
+      } else {
+        stSelectedCompare.add(ticker);
+        btn.style.background = 'rgba(59,158,255,0.15)';
+        btn.style.color = '#3b9eff';
+        btn.style.borderColor = '#3b9eff';
+      }
+      renderCompareTable();
+    }
+
+    function renderCompareTable() {
+      if (!stPortfolioData || stSelectedCompare.size === 0) {
+        document.getElementById('stCompareTable').innerHTML = '<div class="sub">Select stocks above to compare</div>';
+        return;
+      }
+
+      const selected = stPortfolioData.positions.filter(p => stSelectedCompare.has(p.plain_ticker));
+      const metrics  = [
+        { label: 'Current Price',  key: p => `$${parseFloat(p.current_price).toFixed(2)}` },
+        { label: 'Invested',       key: p => currency(p.invested) },
+        { label: 'Current Value',  key: p => currency(p.current_value) },
+        { label: 'P&L',            key: p => { const v = p.pnl; return `<span style="color:${v>=0?'var(--good)':'var(--bad)'}">${v>=0?'+':''}${currency(v)}</span>`; } },
+        { label: 'Return %',       key: p => { const v = p.return_pct; return `<span style="color:${v>=0?'var(--good)':'var(--bad)'}">${v>=0?'+':''}${v.toFixed(2)}%</span>`; } },
+        { label: 'P/E Ratio',      key: p => p.pe_ratio ? parseFloat(p.pe_ratio).toFixed(1) : '—' },
+        { label: 'EPS',            key: p => p.eps ? `$${parseFloat(p.eps).toFixed(2)}` : '—' },
+        { label: 'Market Cap',     key: p => formatMarketCap(p.market_cap_m) },
+        { label: 'Cash Flow',      key: p => p.free_cash_flow ? `$${parseFloat(p.free_cash_flow).toFixed(2)}` : '—' },
+        { label: 'Debt/Equity',    key: p => p.debt_equity ? parseFloat(p.debt_equity).toFixed(2) : '—' },
+        { label: '52W High',       key: p => p['52w_high'] ? `$${parseFloat(p['52w_high']).toFixed(2)}` : '—' },
+        { label: '52W Low',        key: p => p['52w_low'] ? `$${parseFloat(p['52w_low']).toFixed(2)}` : '—' },
+        { label: 'Industry',       key: p => p.industry || '—' },
+      ];
+
+      const html = `<div style="overflow:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Metric</th>
+              ${selected.map(p => `<th>${p.plain_ticker}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${metrics.map(m => `
+              <tr>
+                <td style="color:var(--muted); font-size:13px;">${m.label}</td>
+                ${selected.map(p => `<td>${m.key(p)}</td>`).join('')}
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+
+      document.getElementById('stCompareTable').innerHTML = html;
+    }
+
+    function renderPeAnalysis() {
+      if (!stPortfolioData) return;
+      const withPe = stPortfolioData.positions.filter(p => p.pe_ratio);
+      if (!withPe.length) {
+        document.getElementById('stPeAnalysis').innerHTML = '<div class="sub">P/E data not available for your holdings.</div>';
+        return;
+      }
+
+      const avgPe = withPe.reduce((s, p) => s + parseFloat(p.pe_ratio), 0) / withPe.length;
+
+      document.getElementById('stPeAnalysis').innerHTML = `
+        <div style="margin-bottom:16px; padding:12px 16px; background:rgba(59,158,255,0.08); border:1px solid rgba(59,158,255,0.2); border-radius:8px;">
+          <strong>Portfolio Average P/E: ${avgPe.toFixed(1)}</strong>
+          <span class="sub" style="margin-left:12px;">🟢 &lt;15 Undervalued · 🔵 15-25 Fair · 🟡 25-40 Premium · 🔴 &gt;40 Expensive</span>
+        </div>
+        ${withPe.sort((a, b) => parseFloat(a.pe_ratio) - parseFloat(b.pe_ratio)).map(p => {
+          const pe = parseFloat(p.pe_ratio);
+          const pct = Math.min((pe / 60) * 100, 100);
+          const color = pe < 15 ? '#22c55e' : pe < 25 ? '#3b9eff' : pe < 40 ? '#f59e0b' : '#ef4444';
+          const label = pe < 15 ? '🟢 Undervalued' : pe < 25 ? '🔵 Fair Value' : pe < 40 ? '🟡 Premium' : '🔴 Expensive';
+          return `
+            <div style="margin-bottom:12px;">
+              <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                <strong>${p.plain_ticker}</strong>
+                <div>
+                  <span style="color:${color}; font-weight:600;">P/E ${pe.toFixed(1)}</span>
+                  <span class="sub" style="margin-left:8px;">${label}</span>
+                  ${pe > avgPe ? `<span class="sub" style="margin-left:8px;">+${(pe - avgPe).toFixed(1)} above portfolio avg</span>` : `<span class="sub" style="margin-left:8px; color:var(--good);">${(avgPe - pe).toFixed(1)} below portfolio avg</span>`}
+                </div>
+              </div>
+              <div style="background:rgba(255,255,255,0.06); border-radius:100px; height:8px;">
+                <div style="height:100%; width:${pct}%; background:${color}; border-radius:100px;"></div>
+              </div>
+            </div>`;
+        }).join('')}`;
+    }
+
+    async function loadStocksAIAnalysis() {
+      if (!stPortfolioData) {
+        alert('Please load your portfolio first');
+        return;
+      }
+      const btn    = document.getElementById('stAiBtn');
+      const result = document.getElementById('stAiResult');
+
+      btn.disabled = true;
+      btn.textContent = '⏳ Analysing...';
+      result.innerHTML = '<div class="sub">Claude is analysing your portfolio...</div>';
+
+      try {
+        const portfolioSummary = JSON.stringify({
+          summary:   stPortfolioData.summary,
+          positions: stPortfolioData.positions.map(p => ({
+            ticker:      p.plain_ticker,
+            name:        p.name,
+            return_pct:  p.return_pct,
+            pnl:         p.pnl,
+            pe_ratio:    p.pe_ratio,
+            eps:         p.eps,
+            market_cap:  p.market_cap_m,
+            industry:    p.industry,
+            debt_equity: p.debt_equity,
+            free_cash_flow: p.free_cash_flow,
+          }))
+        });
+
+        const res  = await authFetch(`${getApiBase()}/ai/insights`);
+        const data = await res.json();
+
+        // Custom prompt with portfolio data
+        const stockRes = await authFetch(`${getApiBase()}/ai/analyse-portfolio`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ portfolio: portfolioSummary })
+        });
+
+        if (!stockRes.ok) {
+          // Fallback to general insights
+          result.innerHTML = '<div class="sub" style="color:var(--warn);">Portfolio analysis endpoint not yet configured. Use AI Insights on Dashboard instead.</div>';
+          btn.disabled = false;
+          btn.textContent = '✨ Analyse Portfolio';
+          return;
+        }
+
+        const stockData = await stockRes.json();
+        const typeStyles = {
+          positive: { bg:'rgba(34,197,94,0.1)',  border:'#22c55e', icon:'✅' },
+          warning:  { bg:'rgba(245,158,11,0.1)',  border:'#f59e0b', icon:'⚠️' },
+          tip:      { bg:'rgba(59,158,255,0.1)',  border:'#3b9eff', icon:'💡' },
+          info:     { bg:'rgba(148,163,184,0.1)', border:'#94a3b8', icon:'ℹ️' }
+        };
+
+        let html = '';
+        if (stockData.summary) {
+          html += `<div style="background:rgba(59,158,255,0.08); border-left:3px solid #3b9eff; padding:12px 16px; border-radius:6px; margin-bottom:16px; font-size:14px;">${stockData.summary}</div>`;
+        }
+        html += '<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:12px;">';
+        (stockData.insights || []).forEach(insight => {
+          const s = typeStyles[insight.type] || typeStyles.info;
+          html += `<div style="background:${s.bg}; border:1px solid ${s.border}; border-radius:8px; padding:14px 16px;">
+            <div style="font-weight:600; font-size:14px; margin-bottom:6px;">${s.icon} ${insight.title}</div>
+            <div style="font-size:13px; color:var(--muted); line-height:1.6;">${insight.message}</div>
+          </div>`;
+        });
+        html += '</div>';
+        result.innerHTML = html;
+
+      } catch(e) {
+        result.innerHTML = `<div style="color:var(--bad); font-size:13px;">Error: ${e.message}</div>`;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '✨ Analyse Portfolio';
+      }
     }
 
     // Set dashboard filter to current month/year on load
