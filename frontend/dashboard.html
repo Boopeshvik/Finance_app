@@ -1963,6 +1963,11 @@
         headers: authHeaders(options.headers || {})
       });
       if (response.status === 401) {
+        // Don't logout for external API endpoints
+        const url = response.url || '';
+        if (url.includes('/stocks/') || url.includes('/trading212/')) {
+          throw new Error('Trading 212 API authentication failed. Check your API key.');
+        }
         logout();
         throw new Error('Session expired. Please log in again.');
       }
