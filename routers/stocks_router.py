@@ -1,4 +1,5 @@
 import os
+import base64
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from models.user import User
@@ -6,11 +7,19 @@ from routers.auth import get_current_user
 
 router = APIRouter(prefix="/stocks", tags=["Stocks"])
 
-T212_BASE     = "https://live.trading212.com/api/v0"
-T212_API_KEY  = os.getenv("T212_API_KEY", "")
-FINNHUB_KEY   = os.getenv("FINNHUB_API_KEY", "")
+T212_BASE       = "https://live.trading212.com/api/v0"
+T212_API_KEY    = os.getenv("T212_API_KEY", "")
+T212_API_SECRET = os.getenv("T212_API_SECRET", "")
+FINNHUB_KEY     = os.getenv("FINNHUB_API_KEY", "")
 
-T212_HEADERS  = {"Authorization": T212_API_KEY}
+def get_t212_headers():
+    """Build Trading 212 Basic Auth headers"""
+    if T212_API_SECRET:
+        credentials = base64.b64encode(f"{T212_API_KEY}:{T212_API_SECRET}".encode()).decode()
+        return {"Authorization": f"Basic {credentials}"}
+    else:
+        # Fallback to API key only (older format)
+        return {"Authorization": T212_API_KEY}
 
 
 def extract_ticker(t212_ticker: str) -> str:
@@ -71,7 +80,7 @@ async def get_portfolio(current_user: User = Depends(get_current_user)):
             # Get all positions
             pos_resp = await client.get(
                 f"{T212_BASE}/equity/portfolio",
-                headers=T212_HEADERS
+                headers=get_t212_headers()
             )
             if pos_resp.status_code == 401:
                 raise HTTPException(status_code=401, detail="Invalid Trading 212 API key")
@@ -83,7 +92,7 @@ async def get_portfolio(current_user: User = Depends(get_current_user)):
             # Get account cash
             cash_resp = await client.get(
                 f"{T212_BASE}/equity/account/cash",
-                headers=T212_HEADERS
+                headers=get_t212_headers()
             )
             cash_data = cash_resp.json() if cash_resp.status_code == 200 else {}
 
@@ -165,7 +174,7 @@ async def get_account(current_user: User = Depends(get_current_user)):
         async with httpx.AsyncClient(timeout=10) as client:
             resp = await client.get(
                 f"{T212_BASE}/equity/account/cash",
-                headers=T212_HEADERS
+                headers=get_t212_headers()
             )
             if resp.status_code != 200:
                 raise HTTPException(status_code=502, detail=f"Trading 212 error: {resp.text}")
@@ -186,7 +195,7 @@ async def get_history(current_user: User = Depends(get_current_user)):
         async with httpx.AsyncClient(timeout=15) as client:
             resp = await client.get(
                 f"{T212_BASE}/equity/history/orders",
-                headers=T212_HEADERS,
+                headers=get_t212_headers(),
                 params={"limit": 50}
             )
             if resp.status_code != 200:
