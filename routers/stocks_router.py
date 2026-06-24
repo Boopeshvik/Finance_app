@@ -104,7 +104,7 @@ async def get_portfolio(current_user: User = Depends(get_current_user)):
             hist_resp = await client.get(
                 f"{T212_BASE}/equity/history/orders",
                 headers=headers,
-                params={"limit": 200}
+                params={"limit": 50}
             )
             if hist_resp.status_code == 200:
                 items = hist_resp.json().get("items", [])
