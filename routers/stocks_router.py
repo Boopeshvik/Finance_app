@@ -12,248 +12,208 @@ T212_API_KEY    = os.getenv("T212_API_KEY", "")
 T212_API_SECRET = os.getenv("T212_API_SECRET", "")
 FINNHUB_KEY     = os.getenv("FINNHUB_API_KEY", "")
 
-def get_t212_headers():
-    """Build Trading 212 Basic Auth headers"""
-    if T212_API_SECRET:
-        credentials = base64.b64encode(f"{T212_API_KEY}:{T212_API_SECRET}".encode()).decode()
-        return {"Authorization": f"Basic {credentials}"}
-    else:
-        # Fallback to API key only (older format)
-        return {"Authorization": T212_API_KEY}
-
-
 # Map T212 ETF tickers to Finnhub-compatible tickers
 T212_TICKER_MAP = {
-    "VWRPI": "VWRL.L",   # Vanguard FTSE All-World
-    "VWRPL": "VWRL.L",
-    "VUAGI": "VUSA.L",   # Vanguard S&P 500
-    "VUAGL": "VUSA.L",
-    "CSNDX": "CNDX.L",   # iShares NASDAQ 100
-    "SWDA":  "SWDA.L",   # iShares Core MSCI World
-    "EQQQ":  "EQQQ.L",   # Invesco NASDAQ 100
-    "IUSA":  "IUSA.L",   # iShares S&P 500
-    "ISF":   "ISF.L",    # iShares FTSE 100
-    "VUSA":  "VUSA.L",
+    "VWRPI": "VWRL.L", "VWRPL": "VWRL.L",
+    "VUAGI": "VUSA.L", "VUAGL": "VUSA.L",
+    "CSNDX": "CNDX.L", "SWDA":  "SWDA.L",
+    "EQQQ":  "EQQQ.L", "IUSA":  "IUSA.L",
+    "ISF":   "ISF.L",  "VUSA":  "VUSA.L",
     "VWRL":  "VWRL.L",
 }
 
-def extract_ticker(t212_ticker: str) -> str:
-    """Convert T212 ticker to Finnhub-compatible ticker"""
+
+def get_t212_headers():
+    if T212_API_SECRET:
+        credentials = base64.b64encode(
+            f"{T212_API_KEY}:{T212_API_SECRET}".encode()
+        ).decode()
+        return {"Authorization": f"Basic {credentials}"}
+    return {"Authorization": T212_API_KEY}
+
+
+def finnhub_ticker(t212_ticker: str) -> str:
     base = t212_ticker.split("_")[0].upper()
     return T212_TICKER_MAP.get(base, base)
 
 
+def display_ticker(t212_ticker: str) -> str:
+    return t212_ticker.split("_")[0].upper()
+
+
 async def get_finnhub_data(ticker: str) -> dict:
-    """Fetch fundamentals from Finnhub for a given ticker"""
     try:
         async with httpx.AsyncClient(timeout=10) as client:
-            # Basic financials (P/E, EPS, Market Cap, Debt ratios)
-            resp = await client.get(
-                f"https://finnhub.io/api/v1/stock/metric",
+            metrics_resp = await client.get(
+                "https://finnhub.io/api/v1/stock/metric",
                 params={"symbol": ticker, "metric": "all", "token": FINNHUB_KEY}
             )
-            data = resp.json()
-            metrics = data.get("metric", {})
-
-            # Company profile (Market Cap, industry, country)
             profile_resp = await client.get(
-                f"https://finnhub.io/api/v1/stock/profile2",
+                "https://finnhub.io/api/v1/stock/profile2",
                 params={"symbol": ticker, "token": FINNHUB_KEY}
             )
-            profile = profile_resp.json()
-
+            m = metrics_resp.json().get("metric", {})
+            p = profile_resp.json()
             return {
-                "pe_ratio":          metrics.get("peBasicExclExtraTTM") or metrics.get("peNormalizedAnnual"),
-                "eps":               metrics.get("epsBasicExclExtraItemsTTM") or metrics.get("epsNormalizedAnnual"),
-                "market_cap":        profile.get("marketCapitalization"),  # in millions
-                "revenue_ttm":       metrics.get("revenuePerShareTTM"),
-                "free_cash_flow":    metrics.get("freeCashFlowTTM"),
-                "total_debt":        metrics.get("totalDebt/totalEquityAnnual"),
-                "debt_equity":       metrics.get("totalDebt/totalEquityAnnual"),
-                "dividend_yield":    metrics.get("dividendYieldIndicatedAnnual"),
-                "52w_high":          metrics.get("52WeekHigh"),
-                "52w_low":           metrics.get("52WeekLow"),
-                "beta":              metrics.get("beta"),
-                "roe":               metrics.get("roeTTM"),
-                "industry":          profile.get("finnhubIndustry"),
-                "country":           profile.get("country"),
-                "currency":          profile.get("currency"),
-                "logo":              profile.get("logo"),
-                "weburl":            profile.get("weburl"),
+                "pe_ratio":       m.get("peBasicExclExtraTTM") or m.get("peNormalizedAnnual"),
+                "eps":            m.get("epsBasicExclExtraItemsTTM") or m.get("epsNormalizedAnnual"),
+                "market_cap":     p.get("marketCapitalization"),
+                "revenue_ttm":    m.get("revenuePerShareTTM"),
+                "free_cash_flow": m.get("freeCashFlowTTM"),
+                "debt_equity":    m.get("totalDebt/totalEquityAnnual"),
+                "dividend_yield": m.get("dividendYieldIndicatedAnnual"),
+                "52w_high":       m.get("52WeekHigh"),
+                "52w_low":        m.get("52WeekLow"),
+                "beta":           m.get("beta"),
+                "industry":       p.get("finnhubIndustry"),
+                "logo":           p.get("logo"),
             }
-    except Exception as e:
-        return {"error": str(e)}
+    except Exception:
+        return {}
 
 
 @router.get("/portfolio")
 async def get_portfolio(current_user: User = Depends(get_current_user)):
-    """Fetch live portfolio from Trading 212 + fundamentals from Finnhub"""
     if not T212_API_KEY:
         raise HTTPException(status_code=503, detail="Trading 212 API key not configured")
 
+    headers = get_t212_headers()
+
+    # 1. Fetch positions
     try:
         async with httpx.AsyncClient(timeout=15) as client:
-            # Get all positions
-            pos_resp = await client.get(
-                f"{T212_BASE}/equity/portfolio",
-                headers=get_t212_headers()
-            )
+            pos_resp = await client.get(f"{T212_BASE}/equity/portfolio", headers=headers)
             if pos_resp.status_code == 401:
-                raise HTTPException(status_code=401, detail="Invalid Trading 212 API key")
+                raise HTTPException(status_code=401, detail="Invalid Trading 212 API key or secret")
             if pos_resp.status_code != 200:
-                raise HTTPException(status_code=502, detail=f"Trading 212 error: {pos_resp.text}")
-
+                raise HTTPException(status_code=502, detail=f"T212 error: {pos_resp.text}")
             positions = pos_resp.json()
 
-            # Get account cash
-            cash_resp = await client.get(
-                f"{T212_BASE}/equity/account/cash",
-                headers=get_t212_headers()
-            )
+            cash_resp = await client.get(f"{T212_BASE}/equity/account/cash", headers=headers)
             cash_data = cash_resp.json() if cash_resp.status_code == 200 else {}
-
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Could not connect to Trading 212: {str(e)}")
+        raise HTTPException(status_code=502, detail=str(e))
 
-    # Fetch order history to calculate real avg price
-    order_history = {}
+    # 2. Fetch order history to calculate invested amounts
+    # Key: lowercase ticker → {total_cost, total_qty, first_date}
+    ticker_data = {}
     try:
         async with httpx.AsyncClient(timeout=15) as client:
             hist_resp = await client.get(
                 f"{T212_BASE}/equity/history/orders",
-                headers=get_t212_headers(),
+                headers=headers,
                 params={"limit": 200}
             )
             if hist_resp.status_code == 200:
-                hist_data = hist_resp.json()
-                items = hist_data.get("items", [])
-                # Calculate avg cost per ticker from filled orders
-                ticker_orders = {}
+                items = hist_resp.json().get("items", [])
                 for item in items:
                     order = item.get("order", {})
                     fill  = item.get("fill", {})
                     if order.get("status") != "FILLED":
                         continue
-                    # Use lowercase ticker key for matching
-                    t         = order.get("ticker", "").lower()
+
+                    ticker    = order.get("ticker", "").lower()  # e.g. "vwrpl_eq"
                     side      = order.get("side", "BUY")
-                    filled_at = fill.get("filledAt") or order.get("createdAt", "")
-                    # Use walletImpact.netValue for GBP cost (handles FX correctly)
                     wallet    = fill.get("walletImpact", {})
                     net_value = abs(float(wallet.get("netValue", 0)))
                     qty       = abs(float(fill.get("quantity", 0)))
+                    filled_at = fill.get("filledAt") or order.get("createdAt", "")
 
-                    if t not in ticker_orders:
-                        ticker_orders[t] = {"total_cost": 0, "total_qty": 0, "first_date": filled_at}
-                    if side == "BUY":
-                        ticker_orders[t]["total_cost"] += net_value
-                        ticker_orders[t]["total_qty"]  += qty
-                        if filled_at and (not ticker_orders[t]["first_date"] or filled_at < ticker_orders[t]["first_date"]):
-                            ticker_orders[t]["first_date"] = filled_at
-                    elif side == "SELL":
-                        ticker_orders[t]["total_cost"] -= net_value
-                        ticker_orders[t]["total_qty"]  -= qty
-
-                for t, data in ticker_orders.items():
-                    if data["total_qty"] > 0:
-                        order_history[t] = {
-                            "avg_price":  data["total_cost"] / data["total_qty"],
-                            "first_date": data.get("first_date", ""),
-                            "total_cost": data["total_cost"]
+                    if ticker not in ticker_data:
+                        ticker_data[ticker] = {
+                            "total_cost": 0,
+                            "total_qty":  0,
+                            "first_date": filled_at
                         }
-    except Exception:
-        pass
 
-    # Enrich each position with Finnhub data
+                    if side == "BUY":
+                        ticker_data[ticker]["total_cost"] += net_value
+                        ticker_data[ticker]["total_qty"]  += qty
+                        if filled_at and filled_at < ticker_data[ticker]["first_date"]:
+                            ticker_data[ticker]["first_date"] = filled_at
+                    elif side == "SELL":
+                        ticker_data[ticker]["total_cost"] -= net_value
+                        ticker_data[ticker]["total_qty"]  -= qty
+    except Exception:
+        pass  # history failed, will fallback
+
+    # 3. Enrich each position
     enriched = []
     total_invested = 0
     total_current  = 0
 
     for pos in positions:
-        t212_ticker  = pos.get("ticker", "")
-        base_ticker  = t212_ticker.split("_")[0].upper()
-        plain_ticker = extract_ticker(t212_ticker)
+        t212_ticker  = pos.get("ticker", "")           # e.g. "VWRPl_EQ"
+        ticker_key   = t212_ticker.lower()              # e.g. "vwrpl_eq"
+        disp_ticker  = display_ticker(t212_ticker)      # e.g. "VWRPL"
+        finn_ticker  = finnhub_ticker(t212_ticker)      # e.g. "VWRL.L"
 
-        # Use avg price from API, fallback to history calculation
-        avg_price_api  = float(pos.get("averagePricePaid", 0))
-        hist_data_raw  = order_history.get(t212_ticker.lower(), {})
-        avg_price_hist = hist_data_raw.get("avg_price", 0) if isinstance(hist_data_raw, dict) else 0
-        first_date     = hist_data_raw.get("first_date", "") if isinstance(hist_data_raw, dict) else ""
-        avg_price      = avg_price_api if avg_price_api > 0 else avg_price_hist
-        total_cost     = hist_data_raw.get("total_cost", 0) if isinstance(hist_data_raw, dict) else 0
+        quantity      = float(pos.get("quantity", 0))
+        current_price = float(pos.get("currentPrice", 0))
+        current_value = round(current_price * quantity, 2)
 
-        quantity = float(pos.get("quantity", 0))
-        current  = float(pos.get("currentPrice", 0)) * quantity
-        # Use total_cost from history (GBP netValue) as most accurate invested amount
+        # Get invested from history
+        hist = ticker_data.get(ticker_key, {})
+        total_cost = hist.get("total_cost", 0)
+        first_date = hist.get("first_date", "")
+
         if total_cost > 0:
-            invested = total_cost
-        elif avg_price > 0:
-            invested = avg_price * quantity
+            invested        = round(total_cost, 2)
+            avg_price       = round(total_cost / quantity, 4) if quantity > 0 else 0
+            avg_price_source = "history"
         else:
-            invested = current  # fallback
-        pnl = current - invested
-        ror = (pnl / invested * 100) if invested > 0 else 0
+            # Fallback to current value (no history)
+            invested        = current_value
+            avg_price       = 0
+            avg_price_source = "n/a"
 
-        # CAGR calculation
-        cagr = 0
-        if first_date and invested > 0 and current > 0:
-            try:
-                from datetime import datetime, timezone
-                start = datetime.fromisoformat(first_date.replace("Z", "+00:00"))
-                now   = datetime.now(timezone.utc)
-                years = (now - start).days / 365.25
-                if years >= 0.08:  # at least 1 month
-                    cagr = (pow(current / invested, 1 / years) - 1) * 100
-            except Exception:
-                cagr = 0
+        pnl = round(current_value - invested, 2)
+        ror = round((pnl / invested * 100), 2) if invested > 0 else 0
 
-        # Get Finnhub fundamentals
-        fundamentals = await get_finnhub_data(plain_ticker)
+        # Finnhub fundamentals
+        fund = await get_finnhub_data(finn_ticker)
 
         enriched.append({
             "ticker":           t212_ticker,
-            "plain_ticker":     base_ticker,
-            "name":             pos.get("name", base_ticker),
+            "plain_ticker":     disp_ticker,
+            "name":             pos.get("instrument", {}).get("name", disp_ticker) if isinstance(pos.get("instrument"), dict) else disp_ticker,
             "quantity":         quantity,
-            "avg_price":        round(avg_price, 4),
-            "current_price":    pos.get("currentPrice", 0),
-            "invested":         round(invested, 2),
-            "current_value":    round(current, 2),
-            "pnl":              round(pnl, 2),
-            "return_pct":       round(ror, 2),
-            "currency":         pos.get("currency", "GBP"),
-            "avg_price_source": "api" if avg_price_api > 0 else ("history" if avg_price_hist > 0 else "n/a"),
-            "cagr":             round(cagr, 2),
+            "avg_price":        avg_price,
+            "current_price":    current_price,
+            "invested":         invested,
+            "current_value":    current_value,
+            "pnl":              pnl,
+            "return_pct":       ror,
+            "currency":         "GBP",
+            "avg_price_source": avg_price_source,
             "first_invested":   first_date[:10] if first_date else None,
-            # Finnhub fundamentals
-            "pe_ratio":         fundamentals.get("pe_ratio"),
-            "eps":              fundamentals.get("eps"),
-            "market_cap_m":     fundamentals.get("market_cap"),
-            "revenue_ttm":      fundamentals.get("revenue_ttm"),
-            "free_cash_flow":   fundamentals.get("free_cash_flow"),
-            "debt_equity":      fundamentals.get("debt_equity"),
-            "dividend_yield":   fundamentals.get("dividend_yield"),
-            "52w_high":         fundamentals.get("52w_high"),
-            "52w_low":          fundamentals.get("52w_low"),
-            "beta":             fundamentals.get("beta"),
-            "industry":         fundamentals.get("industry"),
-            "logo":             fundamentals.get("logo"),
+            "pe_ratio":         fund.get("pe_ratio"),
+            "eps":              fund.get("eps"),
+            "market_cap_m":     fund.get("market_cap"),
+            "free_cash_flow":   fund.get("free_cash_flow"),
+            "debt_equity":      fund.get("debt_equity"),
+            "dividend_yield":   fund.get("dividend_yield"),
+            "52w_high":         fund.get("52w_high"),
+            "52w_low":          fund.get("52w_low"),
+            "beta":             fund.get("beta"),
+            "industry":         fund.get("industry"),
+            "logo":             fund.get("logo"),
         })
 
         total_invested += invested
-        total_current  += current
+        total_current  += current_value
 
-    total_pnl = total_current - total_invested
-    total_ror = (total_pnl / total_invested * 100) if total_invested > 0 else 0
+    total_pnl = round(total_current - total_invested, 2)
+    total_ror = round((total_pnl / total_invested * 100), 2) if total_invested > 0 else 0
 
     return {
         "summary": {
             "total_invested":   round(total_invested, 2),
             "total_value":      round(total_current, 2),
-            "total_pnl":        round(total_pnl, 2),
-            "total_return_pct": round(total_ror, 2),
+            "total_pnl":        total_pnl,
+            "total_return_pct": total_ror,
             "cash":             cash_data.get("free", 0),
             "position_count":   len(enriched)
         },
@@ -263,18 +223,13 @@ async def get_portfolio(current_user: User = Depends(get_current_user)):
 
 @router.get("/account")
 async def get_account(current_user: User = Depends(get_current_user)):
-    """Get Trading 212 account summary"""
     if not T212_API_KEY:
-        raise HTTPException(status_code=503, detail="Trading 212 API key not configured")
-
+        raise HTTPException(status_code=503, detail="T212 API key not configured")
     try:
         async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.get(
-                f"{T212_BASE}/equity/account/cash",
-                headers=get_t212_headers()
-            )
+            resp = await client.get(f"{T212_BASE}/equity/account/cash", headers=get_t212_headers())
             if resp.status_code != 200:
-                raise HTTPException(status_code=502, detail=f"Trading 212 error: {resp.text}")
+                raise HTTPException(status_code=502, detail=resp.text)
             return resp.json()
     except HTTPException:
         raise
@@ -284,10 +239,8 @@ async def get_account(current_user: User = Depends(get_current_user)):
 
 @router.get("/history")
 async def get_history(current_user: User = Depends(get_current_user)):
-    """Get Trading 212 order history"""
     if not T212_API_KEY:
-        raise HTTPException(status_code=503, detail="Trading 212 API key not configured")
-
+        raise HTTPException(status_code=503, detail="T212 API key not configured")
     try:
         async with httpx.AsyncClient(timeout=15) as client:
             resp = await client.get(
@@ -296,7 +249,7 @@ async def get_history(current_user: User = Depends(get_current_user)):
                 params={"limit": 50}
             )
             if resp.status_code != 200:
-                raise HTTPException(status_code=502, detail=f"Trading 212 error: {resp.text}")
+                raise HTTPException(status_code=502, detail=resp.text)
             return resp.json()
     except HTTPException:
         raise
