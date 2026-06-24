@@ -22,9 +22,25 @@ def get_t212_headers():
         return {"Authorization": T212_API_KEY}
 
 
+# Map T212 ETF tickers to Finnhub-compatible tickers
+T212_TICKER_MAP = {
+    "VWRPI": "VWRL.L",   # Vanguard FTSE All-World
+    "VWRPL": "VWRL.L",
+    "VUAGI": "VUSA.L",   # Vanguard S&P 500
+    "VUAGL": "VUSA.L",
+    "CSNDX": "CNDX.L",   # iShares NASDAQ 100
+    "SWDA":  "SWDA.L",   # iShares Core MSCI World
+    "EQQQ":  "EQQQ.L",   # Invesco NASDAQ 100
+    "IUSA":  "IUSA.L",   # iShares S&P 500
+    "ISF":   "ISF.L",    # iShares FTSE 100
+    "VUSA":  "VUSA.L",
+    "VWRL":  "VWRL.L",
+}
+
 def extract_ticker(t212_ticker: str) -> str:
-    """Convert T212 ticker format (AAPL_US_EQ) to plain ticker (AAPL)"""
-    return t212_ticker.split("_")[0]
+    """Convert T212 ticker to Finnhub-compatible ticker"""
+    base = t212_ticker.split("_")[0].upper()
+    return T212_TICKER_MAP.get(base, base)
 
 
 async def get_finnhub_data(ticker: str) -> dict:
@@ -101,35 +117,104 @@ async def get_portfolio(current_user: User = Depends(get_current_user)):
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Could not connect to Trading 212: {str(e)}")
 
+    # Fetch order history to calculate real avg price
+    order_history = {}
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            hist_resp = await client.get(
+                f"{T212_BASE}/equity/history/orders",
+                headers=get_t212_headers(),
+                params={"limit": 200}
+            )
+            if hist_resp.status_code == 200:
+                hist_data = hist_resp.json()
+                items = hist_data.get("items", [])
+                # Calculate avg cost per ticker from filled orders
+                ticker_orders = {}
+                for item in items:
+                    order = item.get("order", {})
+                    fill  = item.get("fill", {})
+                    if order.get("status") != "FILLED":
+                        continue
+                    t         = order.get("ticker", "")
+                    qty       = float(fill.get("quantity", 0))
+                    price     = float(fill.get("price", 0))
+                    side      = order.get("side", "BUY")
+                    filled_at = fill.get("filledAt") or order.get("createdAt", "")
+                    if t not in ticker_orders:
+                        ticker_orders[t] = {"total_cost": 0, "total_qty": 0, "first_date": filled_at}
+                    if side == "BUY":
+                        ticker_orders[t]["total_cost"] += qty * price
+                        ticker_orders[t]["total_qty"]  += qty
+                        # Track earliest date
+                        if filled_at and filled_at < ticker_orders[t]["first_date"]:
+                            ticker_orders[t]["first_date"] = filled_at
+                    elif side == "SELL":
+                        ticker_orders[t]["total_qty"]  -= qty
+                for t, data in ticker_orders.items():
+                    if data["total_qty"] > 0:
+                        order_history[t] = {
+                            "avg_price":  data["total_cost"] / data["total_qty"],
+                            "first_date": data.get("first_date", ""),
+                            "total_cost": data["total_cost"]
+                        }
+    except Exception:
+        pass
+
     # Enrich each position with Finnhub data
     enriched = []
     total_invested = 0
     total_current  = 0
 
     for pos in positions:
-        t212_ticker = pos.get("ticker", "")
+        t212_ticker  = pos.get("ticker", "")
+        base_ticker  = t212_ticker.split("_")[0].upper()
         plain_ticker = extract_ticker(t212_ticker)
 
-        invested = float(pos.get("averagePricePaid", 0)) * float(pos.get("quantity", 0))
-        current  = float(pos.get("currentPrice", 0)) * float(pos.get("quantity", 0))
-        pnl      = current - invested
-        ror      = (pnl / invested * 100) if invested > 0 else 0
+        # Use avg price from API, fallback to history calculation
+        avg_price_api  = float(pos.get("averagePricePaid", 0))
+        hist_data_raw  = order_history.get(t212_ticker, {})
+        avg_price_hist = hist_data_raw.get("avg_price", 0) if isinstance(hist_data_raw, dict) else 0
+        first_date     = hist_data_raw.get("first_date", "") if isinstance(hist_data_raw, dict) else ""
+        avg_price      = avg_price_api if avg_price_api > 0 else avg_price_hist
+
+        quantity = float(pos.get("quantity", 0))
+        current  = float(pos.get("currentPrice", 0)) * quantity
+        invested = avg_price * quantity if avg_price > 0 else current  # fallback to current value
+        pnl = current - invested
+        ror = (pnl / invested * 100) if invested > 0 else 0
+
+        # CAGR calculation
+        cagr = 0
+        if first_date and invested > 0 and current > 0:
+            try:
+                from datetime import datetime, timezone
+                start = datetime.fromisoformat(first_date.replace("Z", "+00:00"))
+                now   = datetime.now(timezone.utc)
+                years = (now - start).days / 365.25
+                if years >= 0.08:  # at least 1 month
+                    cagr = (pow(current / invested, 1 / years) - 1) * 100
+            except Exception:
+                cagr = 0
 
         # Get Finnhub fundamentals
         fundamentals = await get_finnhub_data(plain_ticker)
 
         enriched.append({
             "ticker":           t212_ticker,
-            "plain_ticker":     plain_ticker,
-            "name":             pos.get("name", plain_ticker),
-            "quantity":         pos.get("quantity", 0),
-            "avg_price":        pos.get("averagePricePaid", 0),
+            "plain_ticker":     base_ticker,
+            "name":             pos.get("name", base_ticker),
+            "quantity":         quantity,
+            "avg_price":        round(avg_price, 4),
             "current_price":    pos.get("currentPrice", 0),
             "invested":         round(invested, 2),
             "current_value":    round(current, 2),
             "pnl":              round(pnl, 2),
             "return_pct":       round(ror, 2),
             "currency":         pos.get("currency", "GBP"),
+            "avg_price_source": "api" if avg_price_api > 0 else ("history" if avg_price_hist > 0 else "n/a"),
+            "cagr":             round(cagr, 2),
+            "first_invested":   first_date[:10] if first_date else None,
             # Finnhub fundamentals
             "pe_ratio":         fundamentals.get("pe_ratio"),
             "eps":              fundamentals.get("eps"),
