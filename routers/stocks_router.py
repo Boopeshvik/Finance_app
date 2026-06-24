@@ -136,21 +136,26 @@ async def get_portfolio(current_user: User = Depends(get_current_user)):
                     fill  = item.get("fill", {})
                     if order.get("status") != "FILLED":
                         continue
-                    t         = order.get("ticker", "")
-                    qty       = float(fill.get("quantity", 0))
-                    price     = float(fill.get("price", 0))
+                    # Use lowercase ticker key for matching
+                    t         = order.get("ticker", "").lower()
                     side      = order.get("side", "BUY")
                     filled_at = fill.get("filledAt") or order.get("createdAt", "")
+                    # Use walletImpact.netValue for GBP cost (handles FX correctly)
+                    wallet    = fill.get("walletImpact", {})
+                    net_value = abs(float(wallet.get("netValue", 0)))
+                    qty       = abs(float(fill.get("quantity", 0)))
+
                     if t not in ticker_orders:
                         ticker_orders[t] = {"total_cost": 0, "total_qty": 0, "first_date": filled_at}
                     if side == "BUY":
-                        ticker_orders[t]["total_cost"] += qty * price
+                        ticker_orders[t]["total_cost"] += net_value
                         ticker_orders[t]["total_qty"]  += qty
-                        # Track earliest date
-                        if filled_at and filled_at < ticker_orders[t]["first_date"]:
+                        if filled_at and (not ticker_orders[t]["first_date"] or filled_at < ticker_orders[t]["first_date"]):
                             ticker_orders[t]["first_date"] = filled_at
                     elif side == "SELL":
+                        ticker_orders[t]["total_cost"] -= net_value
                         ticker_orders[t]["total_qty"]  -= qty
+
                 for t, data in ticker_orders.items():
                     if data["total_qty"] > 0:
                         order_history[t] = {
@@ -173,14 +178,21 @@ async def get_portfolio(current_user: User = Depends(get_current_user)):
 
         # Use avg price from API, fallback to history calculation
         avg_price_api  = float(pos.get("averagePricePaid", 0))
-        hist_data_raw  = order_history.get(t212_ticker, {})
+        hist_data_raw  = order_history.get(t212_ticker.lower(), {})
         avg_price_hist = hist_data_raw.get("avg_price", 0) if isinstance(hist_data_raw, dict) else 0
         first_date     = hist_data_raw.get("first_date", "") if isinstance(hist_data_raw, dict) else ""
         avg_price      = avg_price_api if avg_price_api > 0 else avg_price_hist
+        total_cost     = hist_data_raw.get("total_cost", 0) if isinstance(hist_data_raw, dict) else 0
 
         quantity = float(pos.get("quantity", 0))
         current  = float(pos.get("currentPrice", 0)) * quantity
-        invested = avg_price * quantity if avg_price > 0 else current  # fallback to current value
+        # Use total_cost from history (GBP netValue) as most accurate invested amount
+        if total_cost > 0:
+            invested = total_cost
+        elif avg_price > 0:
+            invested = avg_price * quantity
+        else:
+            invested = current  # fallback
         pnl = current - invested
         ror = (pnl / invested * 100) if invested > 0 else 0
 
