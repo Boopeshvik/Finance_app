@@ -1018,7 +1018,14 @@
               <option value="income">Income</option>
               <option value="investment">Investment</option>
             </select>
-            <input id="tmplCategory" type="text" placeholder="Category" />
+            <div class="cat-dropdown-wrap" style="position:relative;">
+              <input id="tmplCategory" type="text" class="cat-search-input" placeholder="Select or search category…" autocomplete="off" required
+                oninput="filterTmplCategories(this.value)"
+                onfocus="filterTmplCategories(this.value)"
+                onkeydown="handleTmplCatKey(event)" />
+              <span class="cat-dropdown-arrow">▾</span>
+              <div id="tmplCategoryDropdown" style="display:none; position:absolute; top:100%; left:0; right:0; z-index:999; background:#0f1b2d; border:1px solid rgba(59,158,255,0.4); border-radius:0 0 8px 8px; max-height:180px; overflow-y:auto; box-shadow:0 8px 24px rgba(0,0,0,0.4);"></div>
+            </div>
             <input id="tmplAmount" type="number" placeholder="Amount £" step="0.01" />
           </div>
           <div style="display:flex; gap:10px; align-items:center;">
@@ -4987,6 +4994,46 @@
     let allTemplates = [];
 
     function getTemplatesEndpoint() { return `${getApiBase()}/templates/`; }
+
+    function filterTmplCategories(val) {
+      const type     = document.getElementById('tmplType').value;
+      const dropdown = document.getElementById('tmplCategoryDropdown');
+      const filtered = allCategories.filter(c =>
+        (!val || c.name.toLowerCase().includes(val.toLowerCase())) &&
+        (c.type === type || c.type === 'expense')
+      );
+      if (!filtered.length) { dropdown.style.display = 'none'; return; }
+      dropdown.innerHTML = filtered.map(c => `
+        <div onclick="selectTmplCategory('${c.name.replace(/'/g,"\'")}', '${c.type}')"
+          style="padding:9px 14px; cursor:pointer; font-size:13px; color:var(--text); border-bottom:1px solid rgba(255,255,255,0.05);"
+          onmouseover="this.style.background='rgba(59,158,255,0.12)'"
+          onmouseout="this.style.background=''">
+          ${c.name} <span style="font-size:11px; color:var(--muted); margin-left:6px;">${c.type}</span>
+        </div>`).join('');
+      dropdown.style.display = 'block';
+    }
+
+    function selectTmplCategory(name, type) {
+      document.getElementById('tmplCategory').value = name;
+      document.getElementById('tmplType').value     = type;
+      document.getElementById('tmplCategoryDropdown').style.display = 'none';
+    }
+
+    function handleTmplCatKey(e) {
+      if (e.key === 'Escape') document.getElementById('tmplCategoryDropdown').style.display = 'none';
+    }
+
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('#tmplCategory') && !e.target.closest('#tmplCategoryDropdown')) {
+        const dd = document.getElementById('tmplCategoryDropdown');
+        if (dd) dd.style.display = 'none';
+      }
+    });
+
+    // Update category filter when type changes
+    document.getElementById('tmplType').addEventListener('change', function() {
+      filterTmplCategories(document.getElementById('tmplCategory').value);
+    });
 
     function toggleTemplateForm(edit = null) {
       const form = document.getElementById('tmplForm');
