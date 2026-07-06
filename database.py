@@ -76,8 +76,7 @@ def run_migrations():
             WHERE start_date IS NULL
         """))
 
-        # Remove old columns that no longer exist in model
-        # (month, year, amount_invested from old schema)
+        # Remove old columns from investments
         for old_col in ['month', 'year', 'amount_invested']:
             try:
                 conn.execute(text(f"""
@@ -98,6 +97,20 @@ def run_migrations():
                 amount_added FLOAT DEFAULT 0,
                 current_value FLOAT NOT NULL,
                 note VARCHAR
+            )
+        """))
+
+        # ── transaction_templates table ────────────
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS transaction_templates (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES users(id),
+                name VARCHAR NOT NULL,
+                type VARCHAR NOT NULL,
+                category VARCHAR NOT NULL,
+                amount FLOAT NOT NULL,
+                description VARCHAR,
+                sort_order INTEGER DEFAULT 0
             )
         """))
 
