@@ -4998,9 +4998,12 @@
     function filterTmplCategories(val) {
       const type     = document.getElementById('tmplType').value;
       const dropdown = document.getElementById('tmplCategoryDropdown');
-      const filtered = allCategories.filter(c =>
+      const cats     = window.categoryCache || [];
+      // If cache empty, load categories first
+      if (!cats.length) { loadCategories().then(() => filterTmplCategories(val)); return; }
+      const filtered = cats.filter(c =>
         (!val || c.name.toLowerCase().includes(val.toLowerCase())) &&
-        (c.type === type || c.type === 'expense')
+        (c.type === type)
       );
       if (!filtered.length) { dropdown.style.display = 'none'; return; }
       dropdown.innerHTML = filtered.map(c => `
