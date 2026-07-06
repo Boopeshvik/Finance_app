@@ -995,6 +995,92 @@
     <!-- TRANSACTIONS SECTION -->
     <section id="transactions">
 
+      <!-- ── MONTHLY TEMPLATES ───────────────────── -->
+      <div class="panel stack-gap" style="margin-bottom:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+          <div>
+            <h3 style="margin:0 0 4px;">📋 Monthly Templates</h3>
+            <div class="sub">Save your regular transactions — apply them all in one click each month</div>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button onclick="openApplyTemplateModal()" style="padding:8px 18px; background:linear-gradient(135deg,#22c55e,#16a34a); border:none; border-radius:8px; color:#fff; font-weight:600; cursor:pointer; font-size:13px;">▶ Apply This Month</button>
+            <button onclick="toggleTemplateForm()" id="tmplAddBtn" style="padding:8px 16px; background:var(--accent); border:none; border-radius:8px; color:#fff; font-weight:600; cursor:pointer; font-size:13px;">+ Add Template</button>
+          </div>
+        </div>
+
+        <!-- Add/Edit form (hidden by default) -->
+        <div id="tmplForm" style="display:none; background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:10px; padding:16px; margin-top:4px;">
+          <input type="hidden" id="tmplId" />
+          <div style="display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:10px; margin-bottom:10px;">
+            <input id="tmplName" type="text" placeholder="Name e.g. Rent, Salary" />
+            <select id="tmplType" style="padding:11px 12px; border-radius:8px; background:var(--panel-2); border:1px solid var(--border); color:var(--text); font-size:14px;">
+              <option value="expense">Expense</option>
+              <option value="income">Income</option>
+              <option value="investment">Investment</option>
+            </select>
+            <input id="tmplCategory" type="text" placeholder="Category" />
+            <input id="tmplAmount" type="number" placeholder="Amount £" step="0.01" />
+          </div>
+          <div style="display:flex; gap:10px; align-items:center;">
+            <input id="tmplDescription" type="text" placeholder="Description (optional)" style="flex:1;" />
+            <button onclick="saveTemplate()" style="padding:10px 20px; background:var(--accent); border:none; border-radius:8px; color:#fff; font-weight:600; cursor:pointer;">Save</button>
+            <button onclick="toggleTemplateForm()" style="padding:10px 16px; background:rgba(255,255,255,0.06); border:1px solid var(--border); border-radius:8px; color:var(--muted); cursor:pointer;">Cancel</button>
+          </div>
+          <div id="tmplFormMsg" style="font-size:13px; margin-top:8px; min-height:16px;"></div>
+        </div>
+
+        <!-- Templates list -->
+        <div id="tmplList" style="margin-top:4px;">
+          <div class="sub">Loading templates...</div>
+        </div>
+      </div>
+
+      <!-- APPLY TEMPLATE MODAL -->
+      <div id="applyTmplModal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.75); backdrop-filter:blur(4px); align-items:center; justify-content:center;">
+        <div style="background:#0f1b2d; border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:28px; width:100%; max-width:520px; margin:20px; box-shadow:0 20px 60px rgba(0,0,0,0.5); max-height:90vh; overflow-y:auto;">
+          <h3 style="margin:0 0 6px;">▶ Apply Monthly Templates</h3>
+          <div class="sub" style="margin-bottom:20px;">Review and confirm which transactions to create</div>
+
+          <!-- Month/Year selector -->
+          <div style="display:flex; gap:10px; margin-bottom:20px;">
+            <div style="flex:1;">
+              <label style="font-size:11px; color:var(--muted); display:block; margin-bottom:5px; text-transform:uppercase;">Month</label>
+              <select id="applyTmplMonth" style="width:100%; padding:10px 12px; border-radius:8px; background:var(--panel-2); border:1px solid var(--border); color:var(--text); font-size:14px;">
+                <option value="1">January</option><option value="2">February</option><option value="3">March</option>
+                <option value="4">April</option><option value="5">May</option><option value="6">June</option>
+                <option value="7">July</option><option value="8">August</option><option value="9">September</option>
+                <option value="10">October</option><option value="11">November</option><option value="12">December</option>
+              </select>
+            </div>
+            <div style="flex:1;">
+              <label style="font-size:11px; color:var(--muted); display:block; margin-bottom:5px; text-transform:uppercase;">Year</label>
+              <input id="applyTmplYear" type="number" value="2026" min="2024" max="2030" style="width:100%;" />
+            </div>
+          </div>
+
+          <!-- Template checklist -->
+          <div style="font-size:11px; color:var(--muted); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">Select transactions to create</div>
+          <div id="applyTmplList" style="margin-bottom:20px;"></div>
+
+          <!-- Total -->
+          <div style="background:rgba(255,255,255,0.04); border-radius:8px; padding:12px 16px; margin-bottom:20px;">
+            <div style="display:flex; justify-content:space-between;">
+              <span class="sub">Total Income</span><strong id="applyTotalIncome" style="color:var(--good);">£0</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-top:6px;">
+              <span class="sub">Total Expenses</span><strong id="applyTotalExpense" style="color:var(--bad);">£0</strong>
+            </div>
+          </div>
+
+          <div id="applyTmplMsg" style="font-size:13px; margin-bottom:12px; min-height:16px;"></div>
+
+          <div style="display:flex; gap:10px;">
+            <button onclick="confirmApplyTemplates()" style="flex:1; padding:13px; background:linear-gradient(135deg,#22c55e,#16a34a); border:none; border-radius:10px; color:#fff; font-size:14px; font-weight:600; cursor:pointer;">✅ Create Transactions</button>
+            <button onclick="closeApplyTemplateModal()" style="padding:13px 20px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:10px; color:var(--muted); cursor:pointer;">Cancel</button>
+          </div>
+        </div>
+      </div>
+
 
       <!-- BANK STATEMENT IMPORT -->
       <div class="panel stack-gap" style="border:1px solid rgba(0,212,170,0.3); background:linear-gradient(135deg, rgba(0,212,170,0.05), rgba(59,158,255,0.05));">
@@ -1789,6 +1875,8 @@
                 <th>Mkt Cap</th>
                 <th>Cash Flow</th>
                 <th>Debt/Eq</th>
+                <th>TER %</th>
+                <th>Index</th>
                 <th>52W Range</th>
               </tr>
             </thead>
@@ -3515,6 +3603,7 @@
 
       // Investment lazy-load
       if (sectionId === 'investment') loadInvestmentData();
+      if (sectionId === 'transactions') loadTemplates();
       if (sectionId === 'stocks') loadStocksPortfolio();
 
       // Close sidebar on mobile
@@ -4668,6 +4757,8 @@
           <td style="color:${p.free_cash_flow > 0 ? 'var(--good)' : 'var(--bad)'};">${p.free_cash_flow ? formatNum(p.free_cash_flow, 2, '$') : '—'}</td>
           <td>${p.debt_equity ? parseFloat(p.debt_equity).toFixed(2) : '—'}</td>
           <td style="font-size:12px;">${w52}</td>
+          <td style="font-size:12px; color:var(--muted);">${p.ter ? p.ter + '%' : '—'}</td>
+          <td style="font-size:12px; color:var(--muted);">${p.index_tracked || '—'}</td>
         </tr>`;
       }).join('');
     }
@@ -4888,6 +4979,225 @@
       }
     }
 
+
+    // ═══════════════════════════════════════════════
+    //  MONTHLY TEMPLATES
+    // ═══════════════════════════════════════════════
+
+    let allTemplates = [];
+
+    function getTemplatesEndpoint() { return `${getApiBase()}/templates/`; }
+
+    function toggleTemplateForm(edit = null) {
+      const form = document.getElementById('tmplForm');
+      const btn  = document.getElementById('tmplAddBtn');
+      if (form.style.display === 'none' || edit) {
+        form.style.display = 'block';
+        btn.textContent = '✕ Close';
+        if (edit) {
+          document.getElementById('tmplId').value          = edit.id;
+          document.getElementById('tmplName').value        = edit.name;
+          document.getElementById('tmplType').value        = edit.type;
+          document.getElementById('tmplCategory').value    = edit.category;
+          document.getElementById('tmplAmount').value      = edit.amount;
+          document.getElementById('tmplDescription').value = edit.description || '';
+        } else {
+          document.getElementById('tmplId').value          = '';
+          document.getElementById('tmplName').value        = '';
+          document.getElementById('tmplCategory').value    = '';
+          document.getElementById('tmplAmount').value      = '';
+          document.getElementById('tmplDescription').value = '';
+        }
+      } else {
+        form.style.display = 'none';
+        btn.textContent = '+ Add Template';
+      }
+    }
+
+    async function saveTemplate() {
+      const id   = document.getElementById('tmplId').value;
+      const name = document.getElementById('tmplName').value.trim();
+      const type = document.getElementById('tmplType').value;
+      const cat  = document.getElementById('tmplCategory').value.trim();
+      const amt  = parseFloat(document.getElementById('tmplAmount').value);
+      const desc = document.getElementById('tmplDescription').value.trim();
+      const msg  = document.getElementById('tmplFormMsg');
+
+      if (!name || !cat || isNaN(amt)) {
+        msg.style.color = 'var(--warn)';
+        msg.textContent = 'Please fill in name, category and amount.';
+        return;
+      }
+
+      const body   = { name, type, category: cat, amount: amt, description: desc || null };
+      const url    = id ? `${getTemplatesEndpoint()}${id}` : getTemplatesEndpoint();
+      const method = id ? 'PUT' : 'POST';
+
+      try {
+        const res  = await authFetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const data = await res.json();
+        if (!res.ok) { msg.style.color = 'var(--bad)'; msg.textContent = data.detail || 'Save failed'; return; }
+        msg.style.color = 'var(--good)';
+        msg.textContent = '✅ Saved!';
+        setTimeout(() => { toggleTemplateForm(); }, 800);
+        await loadTemplates();
+      } catch(e) { msg.style.color = 'var(--bad)'; msg.textContent = e.message; }
+    }
+
+    async function deleteTemplate(id) {
+      if (!confirm('Delete this template?')) return;
+      try {
+        const res = await authFetch(`${getTemplatesEndpoint()}${id}`, { method: 'DELETE' });
+        if (res.ok) await loadTemplates();
+      } catch(e) { console.error(e); }
+    }
+
+    async function loadTemplates() {
+      try {
+        const res  = await authFetch(getTemplatesEndpoint());
+        allTemplates = await res.json();
+        renderTemplateList();
+      } catch(e) { console.error('Template load error:', e); }
+    }
+
+    function renderTemplateList() {
+      const container = document.getElementById('tmplList');
+      if (!allTemplates.length) {
+        container.innerHTML = `
+          <div style="text-align:center; padding:24px; color:var(--muted);">
+            <div style="font-size:28px; margin-bottom:8px;">📋</div>
+            <div style="font-weight:600; margin-bottom:4px;">No templates yet</div>
+            <div style="font-size:13px;">Add your regular monthly transactions above</div>
+          </div>`;
+        return;
+      }
+
+      const income     = allTemplates.filter(t => t.type === 'income');
+      const expense    = allTemplates.filter(t => t.type === 'expense');
+      const investment = allTemplates.filter(t => t.type === 'investment');
+
+      const totalIncome     = income.reduce((s, t) => s + t.amount, 0);
+      const totalExpense    = expense.reduce((s, t) => s + t.amount, 0);
+      const totalInvestment = investment.reduce((s, t) => s + t.amount, 0);
+
+      const renderGroup = (title, items, color) => {
+        if (!items.length) return '';
+        return `
+          <div style="margin-bottom:12px;">
+            <div style="font-size:11px; color:${color}; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">${title} · ${currency(items.reduce((s,t)=>s+t.amount,0))}</div>
+            ${items.map(t => `
+              <div style="display:flex; align-items:center; gap:10px; padding:10px 12px; background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:8px; margin-bottom:6px;">
+                <div style="flex:1;">
+                  <strong style="font-size:14px;">${t.name}</strong>
+                  <span class="sub" style="margin-left:8px; font-size:12px;">${t.category}</span>
+                  ${t.description ? `<span class="sub" style="margin-left:8px; font-size:12px;">· ${t.description}</span>` : ''}
+                </div>
+                <strong style="color:${color}; min-width:70px; text-align:right;">${currency(t.amount)}</strong>
+                <button onclick="toggleTemplateForm(${JSON.stringify(t).replace(/"/g,'&quot;')})" style="padding:4px 10px; background:rgba(59,158,255,0.1); border:1px solid rgba(59,158,255,0.2); border-radius:6px; color:#3b9eff; font-size:12px; cursor:pointer;">Edit</button>
+                <button onclick="deleteTemplate(${t.id})" style="padding:4px 10px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.2); border-radius:6px; color:#ef4444; font-size:12px; cursor:pointer;">✕</button>
+              </div>`).join('')}
+          </div>`;
+      };
+
+      container.innerHTML = `
+        ${renderGroup('Income', income, 'var(--good)')}
+        ${renderGroup('Expenses', expense, 'var(--bad)')}
+        ${renderGroup('Investments', investment, '#3b9eff)')}
+        <div style="display:flex; justify-content:space-between; padding:10px 12px; background:rgba(255,255,255,0.04); border-radius:8px; margin-top:8px; flex-wrap:wrap; gap:8px;">
+          <span class="sub">${allTemplates.length} template${allTemplates.length !== 1 ? 's' : ''}</span>
+          <div style="display:flex; gap:16px; font-size:13px;">
+            <span>Income: <strong style="color:var(--good);">${currency(totalIncome)}</strong></span>
+            <span>Expenses: <strong style="color:var(--bad);">${currency(totalExpense)}</strong></span>
+            ${totalInvestment > 0 ? `<span>Investments: <strong style="color:#3b9eff;">${currency(totalInvestment)}</strong></span>` : ''}
+          </div>
+        </div>`;
+    }
+
+    // ── Apply modal ───────────────────────────────
+    function openApplyTemplateModal() {
+      if (!allTemplates.length) { alert('No templates yet. Add some templates first!'); return; }
+
+      const now = new Date();
+      document.getElementById('applyTmplMonth').value = now.getMonth() + 1;
+      document.getElementById('applyTmplYear').value  = now.getFullYear();
+      document.getElementById('applyTmplMsg').textContent = '';
+
+      // Build checklist
+      const list = document.getElementById('applyTmplList');
+      list.innerHTML = allTemplates.map(t => {
+        const color = t.type === 'income' ? 'var(--good)' : t.type === 'investment' ? '#3b9eff' : 'var(--bad)';
+        return `
+          <label style="display:flex; align-items:center; gap:10px; padding:10px 12px; background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:8px; margin-bottom:6px; cursor:pointer;">
+            <input type="checkbox" class="apply-tmpl-check" data-id="${t.id}" data-amount="${t.amount}" data-type="${t.type}" checked style="width:16px; height:16px; cursor:pointer;" onchange="updateApplyTotals()" />
+            <div style="flex:1;">
+              <strong>${t.name}</strong>
+              <span class="sub" style="margin-left:8px; font-size:12px;">${t.category}</span>
+            </div>
+            <strong style="color:${color};">${currency(t.amount)}</strong>
+            <span class="pill" style="font-size:11px; background:rgba(255,255,255,0.05);">${t.type}</span>
+          </label>`;
+      }).join('');
+
+      updateApplyTotals();
+      document.getElementById('applyTmplModal').style.display = 'flex';
+    }
+
+    function updateApplyTotals() {
+      const checks = document.querySelectorAll('.apply-tmpl-check:checked');
+      let income = 0, expense = 0;
+      checks.forEach(c => {
+        if (c.dataset.type === 'income') income += parseFloat(c.dataset.amount);
+        else expense += parseFloat(c.dataset.amount);
+      });
+      document.getElementById('applyTotalIncome').textContent  = currency(income);
+      document.getElementById('applyTotalExpense').textContent = currency(expense);
+    }
+
+    function closeApplyTemplateModal() {
+      document.getElementById('applyTmplModal').style.display = 'none';
+    }
+
+    document.getElementById('applyTmplModal').addEventListener('click', function(e) {
+      if (e.target === this) closeApplyTemplateModal();
+    });
+
+    async function confirmApplyTemplates() {
+      const month = parseInt(document.getElementById('applyTmplMonth').value);
+      const year  = parseInt(document.getElementById('applyTmplYear').value);
+      const msg   = document.getElementById('applyTmplMsg');
+
+      const checked = [...document.querySelectorAll('.apply-tmpl-check:checked')].map(c => parseInt(c.dataset.id));
+      if (!checked.length) { msg.style.color = 'var(--warn)'; msg.textContent = 'Please select at least one template.'; return; }
+
+      msg.style.color = 'var(--muted)';
+      msg.textContent = 'Creating transactions...';
+
+      try {
+        const res  = await authFetch(`${getTemplatesEndpoint()}apply`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ month, year, day: 1, ids: checked })
+        });
+        const data = await res.json();
+
+        if (!res.ok) { msg.style.color = 'var(--bad)'; msg.textContent = data.detail || 'Failed'; return; }
+
+        msg.style.color = 'var(--good)';
+        msg.textContent = `✅ ${data.message}`;
+
+        if (data.skipped?.length) {
+          msg.textContent += ` (${data.skipped.length} skipped)`;
+        }
+
+        setTimeout(() => {
+          closeApplyTemplateModal();
+          loadTransactions();
+        }, 1500);
+
+      } catch(e) { msg.style.color = 'var(--bad)'; msg.textContent = e.message; }
+    }
+
+    // Load templates when transactions section opens
     // Set dashboard filter to current month/year on load
     (function() {
       const now = new Date();

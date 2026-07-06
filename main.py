@@ -19,8 +19,8 @@ from routers.ai import router as ai_router
 from routers.bank_statement import router as bank_statement_router
 from routers.investments_router import router as investments_router
 from routers.stocks_router import router as stocks_router
-
-
+# With other imports
+from routers.templates_router import router as templates_router
 
 from models.user import User
 from models.transaction import Transaction
@@ -32,6 +32,7 @@ from models.goal import Goal
 from models.budget import Budget
 from models.category import Category
 from models.investment import Investment, InvestmentHistory
+from models.transaction_template import TransactionTemplate
 
 Base.metadata.create_all(bind=engine)
 run_migrations()
@@ -73,6 +74,7 @@ app.include_router(ai_router)
 app.include_router(bank_statement_router)
 app.include_router(investments_router)
 app.include_router(stocks_router)
+app.include_router(templates_router)
 
 
 
