@@ -735,6 +735,11 @@
         <span class="nav-icon">📈</span> Stocks ISA
       </button>
 
+      <span class="nav-group-label">Planning</span>
+      <button class="nav-item" id="nav-planner" onclick="showSection('planner')">
+        <span class="nav-icon">🗓️</span> Planner
+      </button>
+
       <span class="nav-group-label">Net Worth</span>
       <button class="nav-item" id="nav-assets" onclick="showSection('assets')">
         <span class="nav-icon">📈</span> Assets
@@ -1937,6 +1942,67 @@
         <div id="stAiResult" style="margin-top:8px;"></div>
       </div>
 
+    </section>
+
+    <section id="planner">
+      <style>
+        .pl-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+        .pl-dow{font-size:11px;color:var(--muted);text-align:center;text-transform:uppercase;letter-spacing:.06em;padding:4px 0}
+        .pl-day{min-height:92px;background:var(--panel-2);border:1px solid var(--border);border-radius:10px;padding:6px;cursor:pointer;display:flex;flex-direction:column;gap:3px;overflow:hidden}
+        .pl-day:hover{border-color:var(--accent)}
+        .pl-day.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-glow)}
+        .pl-day.empty{background:transparent;border:none;cursor:default;min-height:0}
+        .pl-day .dn{font-size:12px;font-weight:700}
+        .pl-day.today .dn{color:var(--accent)}
+        .pl-in{font-size:11px;color:var(--good)} .pl-out{font-size:11px;color:var(--bad)} .pl-inv{font-size:11px;color:var(--warn)}
+        .pl-bal{font-size:10px;color:var(--muted);margin-top:auto}
+        .pl-bal.neg{color:var(--bad)}
+        .pl-form{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+        .pl-form input,.pl-form select{width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:inherit}
+        .pl-form .full{grid-column:1/-1}
+        .pl-item{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
+        .pl-item .grow{flex:1;min-width:0}
+        .pl-item.done{opacity:.55;text-decoration:line-through}
+        .pl-mini{background:transparent;border:1px solid var(--border);color:var(--text);border-radius:6px;padding:3px 8px;font-size:12px;cursor:pointer}
+        .pl-layout{display:grid;grid-template-columns:minmax(0,2fr) minmax(280px,1fr);gap:16px}
+        @media(max-width:900px){.pl-layout{grid-template-columns:1fr}.pl-day{min-height:64px}}
+      </style>
+      <div class="panel" style="margin-bottom:16px;padding:14px 20px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;">
+        <button class="pl-mini" onclick="plShift(-1)">◀</button>
+        <strong id="plMonthLabel" style="min-width:140px;text-align:center;"></strong>
+        <button class="pl-mini" onclick="plShift(1)">▶</button>
+        <button class="pl-mini" onclick="plToday()">Next month</button>
+        <label style="font-size:12px;color:var(--muted);margin-left:auto;">Opening balance (£)
+          <input id="plOpening" type="number" step="0.01" value="0" oninput="plOpeningChanged()" style="width:110px;margin-left:6px;padding:6px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);">
+        </label>
+      </div>
+      <div class="cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px;">
+        <div class="card"><div class="sub">Planned income</div><div class="value" id="plTotIn">—</div></div>
+        <div class="card"><div class="sub">Planned spending</div><div class="value" id="plTotOut">—</div></div>
+        <div class="card"><div class="sub">Planned investing</div><div class="value" id="plTotInv">—</div></div>
+        <div class="card"><div class="sub">Projected month-end balance</div><div class="value" id="plEnd">—</div></div>
+      </div>
+      <div class="pl-layout">
+        <div class="panel">
+          <div class="pl-grid" id="plDows"></div>
+          <div class="pl-grid" id="plGrid" style="margin-top:6px;"></div>
+          <div class="sub" id="plLowest" style="margin-top:10px;"></div>
+        </div>
+        <div class="panel">
+          <h3 id="plDayTitle" style="font-size:15px;">Select a day</h3>
+          <div id="plDayList"></div>
+          <div class="pl-form" id="plForm" style="display:none;">
+            <select id="plType" onchange="plFillCats()"><option value="expense">Expense</option><option value="income">Income</option><option value="investment">Investment</option></select>
+            <input id="plAmount" type="number" step="0.01" min="0" placeholder="Amount">
+            <select id="plCat" class="full"></select>
+            <input id="plDesc" class="full" placeholder="Description (optional)">
+            <button class="header-btn full" id="plSaveBtn" onclick="plSave()">Add to plan</button>
+            <button class="pl-mini full" id="plCancelEdit" style="display:none;" onclick="plResetForm()">Cancel edit</button>
+            <button class="pl-mini full" onclick="plApplyTemplates()">＋ Add my monthly templates to this day</button>
+          </div>
+          <div class="sub" id="plMsg" style="margin-top:6px;"></div>
+        </div>
+      </div>
     </section>
 
     <section id="charts">
@@ -3579,11 +3645,12 @@
       liabilities:   { title: 'Liabilities',    sub: 'Net worth — liabilities' },
       users:         { title: 'Users',          sub: 'User management (Admin only)' },
       investment:    { title: 'Investments',    sub: 'Portfolio performance & analytics' },
-      stocks:        { title: 'Stocks ISA',      sub: 'Live Trading 212 portfolio' }
+      stocks:        { title: 'Stocks ISA',      sub: 'Live Trading 212 portfolio' },
+      planner:       { title: 'Planner',         sub: 'Plan income & spending by date' }
     };
 
     function showSection(sectionId) {
-      const sections = ['dashboard', 'transactions', 'budgets', 'goals', 'assets', 'liabilities', 'categories', 'charts', 'users', 'investment', 'stocks'];
+      const sections = ['dashboard', 'transactions', 'budgets', 'goals', 'assets', 'liabilities', 'categories', 'charts', 'users', 'investment', 'stocks', 'planner'];
       sections.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.style.display = 'none';
@@ -3612,6 +3679,7 @@
       if (sectionId === 'investment') loadInvestmentData();
       if (sectionId === 'transactions') loadTemplates();
       if (sectionId === 'stocks') loadStocksPortfolio();
+      if (sectionId === 'planner') plInit();
 
       // Close sidebar on mobile
       closeSidebar();
@@ -5248,6 +5316,161 @@
     }
 
     // Load templates when transactions section opens
+    /* ══════════ PLANNER ══════════ */
+    let plYear, plMonth, plItems = [], plSelDate = null, plEditId = null;
+
+    function plInit() {
+      if (plYear === undefined) {
+        const n = new Date();
+        plMonth = n.getMonth() + 2; plYear = n.getFullYear();
+        if (plMonth > 12) { plMonth = 1; plYear++; }
+        try { const o = localStorage.getItem('plOpening'); if (o !== null) document.getElementById('plOpening').value = o; } catch(e) {}
+        document.getElementById('plDows').innerHTML = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => `<div class="pl-dow">${d}</div>`).join('');
+      }
+      if (!window.categoryCache || !window.categoryCache.length) { try { loadCategories(); } catch(e) {} }
+      plLoad();
+    }
+    function plToday() { const n = new Date(); plMonth = n.getMonth() + 2; plYear = n.getFullYear(); if (plMonth > 12) { plMonth = 1; plYear++; } plSelDate = null; plLoad(); }
+    function plShift(d) { plMonth += d; if (plMonth > 12) { plMonth = 1; plYear++; } if (plMonth < 1) { plMonth = 12; plYear--; } plSelDate = null; plLoad(); }
+    function plOpeningChanged() { try { localStorage.setItem('plOpening', document.getElementById('plOpening').value); } catch(e) {} plRender(); }
+    function plMsg(t, bad) { const m = document.getElementById('plMsg'); m.textContent = t || ''; m.style.color = bad ? 'var(--bad)' : 'var(--muted)'; }
+    const plPad = n => String(n).padStart(2, '0');
+    const plKey = d => `${plYear}-${plPad(plMonth)}-${plPad(d)}`;
+
+    async function plLoad() {
+      document.getElementById('plMonthLabel').textContent = new Date(plYear, plMonth - 1, 1).toLocaleString('en-GB', { month: 'long', year: 'numeric' });
+      try {
+        const res = await authFetch(`${getApiBase()}/planner/${plYear}/${plMonth}`);
+        if (!res.ok) throw new Error(`Request failed with status ${res.status}`);
+        plItems = await res.json();
+        plMsg('');
+      } catch (e) { plItems = []; plMsg('Could not load plan: ' + e.message, true); }
+      plRender();
+    }
+
+    function plRender() {
+      const days = new Date(plYear, plMonth, 0).getDate();
+      const first = (new Date(plYear, plMonth - 1, 1).getDay() + 6) % 7;
+      const today = new Date(); const todayKey = `${today.getFullYear()}-${plPad(today.getMonth()+1)}-${plPad(today.getDate())}`;
+      let bal = parseFloat(document.getElementById('plOpening').value) || 0;
+      let tIn = 0, tOut = 0, tInv = 0, low = { bal: Infinity, day: null };
+      let html = '';
+      for (let i = 0; i < first; i++) html += '<div class="pl-day empty"></div>';
+      for (let d = 1; d <= days; d++) {
+        const k = plKey(d);
+        const its = plItems.filter(x => x.date === k);
+        const inc = its.filter(x => x.type === 'income').reduce((s, x) => s + x.amount, 0);
+        const exp = its.filter(x => x.type === 'expense').reduce((s, x) => s + x.amount, 0);
+        const inv = its.filter(x => x.type === 'investment').reduce((s, x) => s + x.amount, 0);
+        tIn += inc; tOut += exp; tInv += inv;
+        bal += inc - exp - inv;
+        if (bal < low.bal) low = { bal, day: d };
+        html += `<div class="pl-day ${k === plSelDate ? 'sel' : ''} ${k === todayKey ? 'today' : ''}" onclick="plSelect('${k}')">
+          <div class="dn">${d}</div>
+          ${inc ? `<div class="pl-in">+${currency(inc)}</div>` : ''}
+          ${exp ? `<div class="pl-out">−${currency(exp)}</div>` : ''}
+          ${inv ? `<div class="pl-inv">⇢${currency(inv)}</div>` : ''}
+          ${its.length ? `<div class="pl-bal ${bal < 0 ? 'neg' : ''}">${currency(bal)}</div>` : ''}
+        </div>`;
+      }
+      document.getElementById('plGrid').innerHTML = html;
+      document.getElementById('plTotIn').textContent = currency(tIn);
+      document.getElementById('plTotOut').textContent = currency(tOut);
+      document.getElementById('plTotInv').textContent = currency(tInv);
+      const endEl = document.getElementById('plEnd');
+      endEl.textContent = currency(bal); endEl.style.color = bal < 0 ? 'var(--bad)' : '';
+      document.getElementById('plLowest').textContent = plItems.length
+        ? `Lowest projected balance: ${currency(low.bal)} on ${low.day} ${new Date(plYear, plMonth-1, 1).toLocaleString('en-GB',{month:'short'})}${low.bal < 0 ? ' — you would go overdrawn' : ''}.` : 'Click a day to start planning.';
+      plRenderDay();
+    }
+
+    function plSelect(k) { plSelDate = k; plResetForm(); plRender(); }
+
+    function plFillCats(selected) {
+      const type = document.getElementById('plType').value;
+      const cats = (window.categoryCache || []).filter(c => c.type === type);
+      const sel = document.getElementById('plCat');
+      let names = cats.map(c => c.name);
+      if (selected && !names.includes(selected)) names.push(selected);
+      sel.innerHTML = names.length ? names.map(n => `<option value="${n.replace(/"/g,'&quot;')}">${n}</option>`).join('') : '<option value="">No categories for this type</option>';
+      if (selected) sel.value = selected;
+    }
+
+    function plRenderDay() {
+      const form = document.getElementById('plForm');
+      if (!plSelDate) { document.getElementById('plDayTitle').textContent = 'Select a day'; document.getElementById('plDayList').innerHTML = ''; form.style.display = 'none'; return; }
+      form.style.display = 'grid';
+      document.getElementById('plDayTitle').textContent = new Date(plSelDate + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+      const its = plItems.filter(x => x.date === plSelDate);
+      const sign = { income: '+', expense: '−', investment: '⇢' };
+      const col = { income: 'var(--good)', expense: 'var(--bad)', investment: 'var(--warn)' };
+      document.getElementById('plDayList').innerHTML = its.length ? its.map(x => `
+        <div class="pl-item ${x.status === 'done' ? 'done' : ''}">
+          <div class="grow"><div>${x.category}</div><div class="sub">${x.description || ''}</div></div>
+          <strong style="color:${col[x.type]}">${sign[x.type]}${currency(x.amount)}</strong>
+          ${x.status === 'done' ? '<span class="sub">done</span>' : `
+            <button class="pl-mini" title="Record as a real transaction" onclick="plComplete(${x.id})">✓</button>
+            <button class="pl-mini" onclick="plEdit(${x.id})">✎</button>`}
+          <button class="pl-mini" onclick="plDelete(${x.id})">🗑</button>
+        </div>`).join('') : '<div class="sub" style="padding:8px 0;">Nothing planned for this day.</div>';
+      if (plEditId === null) plFillCats();
+    }
+
+    function plResetForm() {
+      plEditId = null;
+      document.getElementById('plAmount').value = ''; document.getElementById('plDesc').value = '';
+      document.getElementById('plSaveBtn').textContent = 'Add to plan';
+      document.getElementById('plCancelEdit').style.display = 'none';
+    }
+    function plEdit(id) {
+      const x = plItems.find(i => i.id === id); if (!x) return;
+      plEditId = id;
+      document.getElementById('plType').value = x.type; plFillCats(x.category);
+      document.getElementById('plAmount').value = x.amount; document.getElementById('plDesc').value = x.description || '';
+      document.getElementById('plSaveBtn').textContent = 'Save changes';
+      document.getElementById('plCancelEdit').style.display = 'block';
+    }
+
+    async function plSave() {
+      const amount = parseFloat(document.getElementById('plAmount').value);
+      const category = document.getElementById('plCat').value;
+      if (!plSelDate) return plMsg('Pick a day first.', true);
+      if (!(amount > 0)) return plMsg('Enter an amount greater than 0.', true);
+      if (!category) return plMsg('Choose a category (add one in Categories first).', true);
+      const body = { date: plSelDate, type: document.getElementById('plType').value, category, amount, description: document.getElementById('plDesc').value || null };
+      try {
+        const url = plEditId ? `${getApiBase()}/planner/${plEditId}` : `${getApiBase()}/planner`;
+        const res = await authFetch(url, { method: plEditId ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || res.status); }
+        plResetForm(); await plLoad();
+      } catch (e) { plMsg('Save failed: ' + e.message, true); }
+    }
+    async function plDelete(id) {
+      if (!confirm('Remove this planned item?')) return;
+      try { const res = await authFetch(`${getApiBase()}/planner/${id}`, { method: 'DELETE' }); if (!res.ok) throw new Error(res.status); await plLoad(); }
+      catch (e) { plMsg('Delete failed: ' + e.message, true); }
+    }
+    async function plComplete(id) {
+      try {
+        const res = await authFetch(`${getApiBase()}/planner/${id}/complete`, { method: 'POST' });
+        if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || res.status); }
+        plMsg('Recorded as a real transaction.'); await plLoad();
+      } catch (e) { plMsg('Could not record: ' + e.message, true); }
+    }
+    async function plApplyTemplates() {
+      if (!plSelDate) return;
+      try {
+        const tr = await authFetch(getTemplatesEndpoint());
+        const tpls = await tr.json();
+        if (!tpls.length) return plMsg('You have no monthly templates yet (Transactions → Templates).', true);
+        const list = tpls.map(t => `${t.name} (${t.type} ${currency(t.amount)})`).join('\n');
+        if (!confirm(`Add all of these to ${plSelDate}?\n\n${list}`)) return;
+        const res = await authFetch(`${getApiBase()}/planner/apply-templates`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ date: plSelDate, ids: tpls.map(t => t.id) }) });
+        if (!res.ok) throw new Error(res.status);
+        await plLoad();
+      } catch (e) { plMsg('Could not add templates: ' + e.message, true); }
+    }
+
     // Set dashboard filter to current month/year on load
     (function() {
       const now = new Date();
